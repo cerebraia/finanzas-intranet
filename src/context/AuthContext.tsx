@@ -99,15 +99,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Obtener sesión inicial
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      setSession(s)
-      if (s?.user) {
-        const { profile: p, memberRole, workspaceId } = await loadProfileAndMember(s.user)
-        setProfile(p)
-        setUser(supabaseUserToApp(s.user, p, memberRole, workspaceId))
-      }
-      setIsLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(async ({ data: { session: s } }) => {
+        setSession(s)
+        if (s?.user) {
+          const { profile: p, memberRole, workspaceId } = await loadProfileAndMember(s.user)
+          setProfile(p)
+          setUser(supabaseUserToApp(s.user, p, memberRole, workspaceId))
+        }
+        setIsLoading(false)
+      })
+      .catch(() => {
+        // Network error (Failed to fetch, CORS, etc.) — unblock the loading state
+        setIsLoading(false)
+      })
 
     // Escuchar cambios de sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
