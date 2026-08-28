@@ -42,7 +42,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export const ROLE_NAV_GROUPS: Record<UserRole, string[]> = {
   SUPER_ADMIN: ['*'],
   ADMIN:       ['*'],
-  MANAGER:     ['/', '/pending', '/calendario', '/movements', '/income', '/expenses', '/accounts', '/clients', '/receivables', '/business-reports', '/reports', '/statistics', '/budgets', '/fernando-ads', '/metas-anuales', '/por-comprar', '/recordatorios'],
+  MANAGER:     ['/', '/pending', '/calendario', '/movements', '/income', '/expenses', '/accounts', '/clients', '/servicios', '/receivables', '/business-reports', '/reports', '/statistics', '/budgets', '/fernando-ads', '/metas-anuales', '/por-comprar', '/recordatorios'],
   EMPLOYEE:    ['/', '/pending', '/calendario', '/income', '/expenses', '/movements', '/metas-anuales'],
   VIEWER:      ['/', '/calendario', '/statistics'],
 }

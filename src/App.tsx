@@ -50,6 +50,7 @@ const SettingsPage        = lazy(() => import('@/pages/Settings').then(m => ({ d
 const NotificationsPage   = lazy(() => import('@/pages/Notifications').then(m => ({ default: m.NotificationsPage })))
 const ImportPage          = lazy(() => import('@/pages/Import').then(m => ({ default: m.ImportPage })))
 const AnnualGoalsPage     = lazy(() => import('@/pages/AnnualGoals').then(m => ({ default: m.AnnualGoalsPage })))
+const ServicesPage        = lazy(() => import('@/pages/Services').then(m => ({ default: m.ServicesPage })))
 
 function PageFallback() {
   return (
@@ -95,6 +96,7 @@ function PrivateApp() {
               <Route path="/fernando-ads"       element={<PrivateRoute requiredPath="/fernando-ads"><FernandoADSPage /></PrivateRoute>} />
               <Route path="/clients"            element={<PrivateRoute requiredPath="/clients"><ClientsPage /></PrivateRoute>} />
               <Route path="/clients/:id"        element={<PrivateRoute requiredPath="/clients"><ClientDetailPage /></PrivateRoute>} />
+              <Route path="/servicios"          element={<PrivateRoute requiredPath="/servicios"><ServicesPage /></PrivateRoute>} />
               <Route path="/receivables"        element={<PrivateRoute requiredPath="/receivables"><ReceivablesPage /></PrivateRoute>} />
               <Route path="/business-reports"   element={<PrivateRoute requiredPath="/business-reports"><BusinessReportsPage /></PrivateRoute>} />
 

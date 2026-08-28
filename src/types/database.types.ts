@@ -1676,7 +1676,11 @@ export type Database = {
       }
       services: {
         Row: {
+          base_price: number
+          billing_mode: string
+          category: string | null
           created_at: string
+          currency: string
           description: string | null
           id: string
           is_active: boolean
@@ -1685,7 +1689,11 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          base_price?: number
+          billing_mode?: string
+          category?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           id?: string
           is_active?: boolean
@@ -1694,7 +1702,11 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          base_price?: number
+          billing_mode?: string
+          category?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           id?: string
           is_active?: boolean
@@ -2634,7 +2646,7 @@ export const Constants = {
   },
 } as const
 
-// ─── Convenience aliases used across the app ─────────────────────────────────
+// ─── Convenience aliases ──────────────────────────────────────────────────────
 export type ProfileRow             = Database['public']['Tables']['profiles']['Row']
 export type WorkspaceRow           = Database['public']['Tables']['workspaces']['Row']
 export type AccountRow             = Database['public']['Tables']['accounts']['Row']

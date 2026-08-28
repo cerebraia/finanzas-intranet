@@ -255,14 +255,19 @@ export const clientsService = {
     return { collected: r.collected, directCosts: r.directCosts, margin: r.margin, marginPct: r.marginPct }
   },
 
-  async listCatalog(workspaceId: string): Promise<{ id: string; name: string }[]> {
+  async listCatalog(workspaceId: string): Promise<{ id: string; name: string; basePrice: number; billingMode: string }[]> {
     const { data, error } = await supabase
       .from('services')
-      .select('id, name')
+      .select('id, name, base_price, billing_mode')
       .eq('workspace_id', workspaceId)
       .eq('is_active', true)
       .order('name')
     if (error) throw new Error(error.message)
-    return (data ?? []) as { id: string; name: string }[]
+    return ((data ?? []) as { id: string; name: string; base_price: number; billing_mode: string }[]).map(r => ({
+      id:          r.id,
+      name:        r.name,
+      basePrice:   Number(r.base_price ?? 0),
+      billingMode: r.billing_mode ?? 'MONTHLY',
+    }))
   },
 }

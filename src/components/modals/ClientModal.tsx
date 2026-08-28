@@ -132,17 +132,22 @@ export function ClientModal({ open, onClose, editingClient }: ClientModalProps) 
                   <div className="mt-3 space-y-3 animate-fade-in">
                     <div>
                       <label className={labelCls}>Servicio</label>
-                      <select value={serviceId} onChange={e => setServiceId(e.target.value)} className={inputCls}>
+                      <select value={serviceId} onChange={e => {
+                        const id = e.target.value
+                        setServiceId(id)
+                        const svc = catalog.find(s => s.id === id)
+                        if (svc && !price) setPrice(String(svc.basePrice))
+                      }} className={inputCls}>
                         <option value="">Seleccionar servicio</option>
-                        {catalog.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        {catalog.map(s => <option key={s.id} value={s.id}>{s.name} — ${s.basePrice}</option>)}
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={labelCls}>Precio mensual</label>
+                        <label className={labelCls}>Precio personalizado</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted text-sm">$</span>
-                          <input type="number" min="1" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" className={cn(inputCls, 'pl-6')} />
+                          <input type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="0.00" className={cn(inputCls, 'pl-6')} />
                         </div>
                       </div>
                       <div>

@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Bell,
   ListChecks,
+  Package,
 } from 'lucide-react'
 import type { NavGroup } from '@/types'
 
@@ -62,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Fernando ADS',       path: '/fernando-ads',     icon: Megaphone },
       { label: 'Clientes',           path: '/clients',          icon: Users },
+      { label: 'Servicios',          path: '/servicios',        icon: Package },
       { label: 'Cuentas por Cobrar', path: '/receivables',      icon: Clock },
       { label: 'Reportes Negocio',   path: '/business-reports', icon: BarChart3 },
     ],
