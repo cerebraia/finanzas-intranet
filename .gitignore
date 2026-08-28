@@ -1,0 +1,39 @@
+# ─── Dependencies ────────────────────────────────────────────
+node_modules/
+
+# ─── Build output ────────────────────────────────────────────
+dist/
+server/dist/
+
+# ─── Environment files — NEVER commit secrets ────────────────
+.env
+.env.local
+.env.production
+.env.production.local
+.env.development.local
+.env.test.local
+.env.*.local
+
+# ─── Claude Code settings (may contain PATs / permissions) ───
+.claude/
+
+# ─── OS & editor ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+*.log
+*.log.*
+
+# ─── Prisma legacy (not used in Supabase production) ─────────
+prisma/migrations/
+
+# ─── Supabase CLI temp files (machine-specific, no secrets) ──
+supabase/.temp/
+supabase/.branches/
+
+# ─── Test & coverage ─────────────────────────────────────────
+coverage/
+.nyc_output/
