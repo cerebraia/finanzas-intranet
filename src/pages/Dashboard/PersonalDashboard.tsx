@@ -80,8 +80,11 @@ export function PersonalDashboard() {
   // ─── Pending summary ─────────────────────────────────────────────────────────
   const overdueCount = pendingItems.filter(i => i.status === 'OVERDUE').length
 
-  // ─── Error state ────────────────────────────────────────────────────────────
+  // ─── Error state (summary is the core — if it fails, show full error) ────────
   if (summaryError) {
+    if (import.meta.env.DEV) {
+      console.error('[Dashboard] summary error', summaryError)
+    }
     return (
       <div className="space-y-5 pb-20 md:pb-6">
         <div className="flex items-start justify-between gap-4">
@@ -91,7 +94,10 @@ export function PersonalDashboard() {
           <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
           <p className="text-sm font-semibold text-content-primary">No pudimos cargar tu centro de control</p>
           <p className="text-xs text-content-muted">Verifica tu conexión o intenta de nuevo.</p>
-          <button onClick={() => refetchSummary()} className="mt-2 px-4 py-1.5 rounded-lg bg-base-elevated border border-base-border text-xs font-medium text-content-primary hover:bg-base-hover transition-colors">
+          <button
+            onClick={() => refetchSummary()}
+            className="mt-2 px-4 py-1.5 rounded-lg bg-base-elevated border border-base-border text-xs font-medium text-content-primary hover:bg-base-hover transition-colors"
+          >
             Reintentar
           </button>
         </div>
