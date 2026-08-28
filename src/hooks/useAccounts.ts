@@ -23,3 +23,17 @@ export function useCreateAccount() {
     onError: (err: Error) => toast.error(mapSupabaseError(err)),
   })
 }
+
+export function useDeactivateAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId: _wsId }: { id: string; workspaceId: string }) =>
+      accountsService.deactivate(id),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['accounts', vars.workspaceId] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Cuenta desactivada')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}

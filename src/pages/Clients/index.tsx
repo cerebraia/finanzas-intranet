@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Users, Plus, Pencil, ExternalLink, TrendingUp, Clock, DollarSign, AlertCircle } from 'lucide-react'
+import { Users, Plus, Pencil, ExternalLink, TrendingUp, Clock, DollarSign, AlertCircle, Archive, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { PageHeader, EmptyState, Badge } from '@/components/ui'
+import { PageHeader, EmptyState, Badge, ConfirmDialog, ActionsMenu } from '@/components/ui'
 import { ClientModal } from '@/components/modals/ClientModal'
 import { useWorkspace } from '@/context/WorkspaceContext'
-import { useClients } from '@/hooks/useClients'
+import { useClients, useArchiveClient, useDeleteClient } from '@/hooks/useClients'
+import { clientsService } from '@/services/clients.service'
 import { useBusinessDashboard } from '@/hooks/useBusinessAnalytics'
 import { formatCurrency } from '@/lib/utils'
 import type { ApiClient, ClientStatus } from '@/types/api'
@@ -27,8 +28,14 @@ export function ClientsPage() {
   const { data: clients = [], isLoading, isError, refetch } = useClients(wsId)
   const { data: biz } = useBusinessDashboard(wsId, dateRange.from, dateRange.to)
 
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editing, setEditing]     = useState<ApiClient | null>(null)
+  const [modalOpen,      setModalOpen]      = useState(false)
+  const [editing,        setEditing]        = useState<ApiClient | null>(null)
+  const [confirmArchive, setConfirmArchive] = useState<ApiClient | null>(null)
+  const [confirmDelete,  setConfirmDelete]  = useState<ApiClient | null>(null)
+  const [blockedMsg,     setBlockedMsg]     = useState<string | null>(null)
+
+  const archiveClient = useArchiveClient()
+  const deleteClient  = useDeleteClient()
 
   const activeCount    = clients.filter(c => c.status === 'ACTIVE').length
   const totalMonthly   = clients
@@ -134,16 +141,26 @@ export function ClientsPage() {
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={client.status} /></td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => navigate(`/clients/${client.id}`)}
-                            className="p-1.5 rounded text-content-muted hover:text-brand-400 hover:bg-brand-600/10 transition-colors" title="Ver perfil">
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => { setEditing(client); setModalOpen(true) }}
-                            className="p-1.5 rounded text-content-muted hover:text-brand-400 hover:bg-brand-600/10 transition-colors" title="Editar">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <ActionsMenu items={[
+                          { label: 'Ver perfil', icon: ExternalLink, onClick: () => navigate(`/clients/${client.id}`) },
+                          { label: 'Editar',     icon: Pencil,       onClick: () => { setEditing(client); setModalOpen(true) } },
+                          { label: 'Archivar',   icon: Archive,      onClick: async () => {
+                            const hasAct = await clientsService.hasActivity(client.id)
+                            if (hasAct) {
+                              setConfirmArchive(client)
+                            } else {
+                              setConfirmDelete(client)
+                            }
+                          }, separator: true },
+                          { label: 'Eliminar',   icon: Trash2,       onClick: async () => {
+                            const hasAct = await clientsService.hasActivity(client.id)
+                            if (hasAct) {
+                              setBlockedMsg(`"${client.name}" tiene historial de cobros y no puede eliminarse. Puedes archivarlo.`)
+                            } else {
+                              setConfirmDelete(client)
+                            }
+                          }, danger: true },
+                        ]} />
                       </td>
                     </tr>
                   )
@@ -155,6 +172,41 @@ export function ClientsPage() {
       )}
 
       <ClientModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null) }} editingClient={editing} />
+
+      <ConfirmDialog
+        open={!!confirmArchive}
+        title="Archivar cliente"
+        description={`¿Archivar a "${confirmArchive?.name}"? El cliente quedará inactivo pero se conservará todo su historial.`}
+        confirmLabel="Archivar"
+        variant="warning"
+        onConfirm={() => { if (confirmArchive) archiveClient.mutate({ id: confirmArchive.id, workspaceId: wsId }); setConfirmArchive(null) }}
+        onCancel={() => setConfirmArchive(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Eliminar cliente"
+        description={`¿Eliminar a "${confirmDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={() => { if (confirmDelete) deleteClient.mutate({ id: confirmDelete.id, workspaceId: wsId }); setConfirmDelete(null) }}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!blockedMsg}
+        title="No se puede eliminar"
+        description={blockedMsg ?? ''}
+        confirmLabel="Archivar en su lugar"
+        cancelLabel="Cerrar"
+        variant="warning"
+        onConfirm={() => {
+          const client = clients.find(c => blockedMsg?.includes(`"${c.name}"`))
+          if (client) setConfirmArchive(client)
+          setBlockedMsg(null)
+        }}
+        onCancel={() => setBlockedMsg(null)}
+      />
     </div>
   )
 }

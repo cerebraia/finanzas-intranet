@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Wallet, Plus, Building2, Smartphone, Coins, Bitcoin, CreditCard } from 'lucide-react'
-import { PageHeader, EmptyState, Card } from '@/components/ui'
+import { Wallet, Plus, Building2, Smartphone, Coins, Bitcoin, CreditCard, PowerOff } from 'lucide-react'
+import { PageHeader, EmptyState, Card, ConfirmDialog, ActionsMenu } from '@/components/ui'
 import { useWorkspace } from '@/context/WorkspaceContext'
-import { useAccounts, useCreateAccount } from '@/hooks/useAccounts'
+import { useAccounts, useCreateAccount, useDeactivateAccount } from '@/hooks/useAccounts'
 import { formatCurrency, cn } from '@/lib/utils'
-import type { AccountType } from '@/types/api'
+import type { ApiAccount, AccountType } from '@/types/api'
 
 const iconMap: Record<AccountType, typeof Wallet> = {
   BANK:        Building2,
@@ -30,19 +30,22 @@ const labelMap: Record<AccountType, string> = {
 
 export function AccountsPage() {
   const { activeWorkspace } = useWorkspace()
-  const { data: accounts = [], isLoading } = useAccounts(activeWorkspace.id)
-  const createAccount = useCreateAccount()
-  const [showForm, setShowForm] = useState(false)
-  const [name, setName]     = useState('')
-  const [type, setType]     = useState<AccountType>('BANK')
-  const [initial, setInitial] = useState('')
+  const wsId = activeWorkspace.id
+  const { data: accounts = [], isLoading } = useAccounts(wsId)
+  const createAccount    = useCreateAccount()
+  const deactivateAccount = useDeactivateAccount()
+  const [showForm, setShowForm]       = useState(false)
+  const [name, setName]               = useState('')
+  const [type, setType]               = useState<AccountType>('BANK')
+  const [initial, setInitial]         = useState('')
+  const [confirmDeact, setConfirmDeact] = useState<ApiAccount | null>(null)
 
   const total = accounts.reduce((s, a) => s + a.currentBalance, 0)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     await createAccount.mutateAsync({
-      workspaceId:    activeWorkspace.id,
+      workspaceId:    wsId,
       name,
       type,
       initialBalance: Number(initial) || 0,
@@ -106,8 +109,13 @@ export function AccountsPage() {
                   <p className="text-sm font-semibold text-content-primary">{account.name}</p>
                   <p className="text-xs text-content-muted mt-0.5">{labelMap[account.type]}</p>
                 </div>
-                <div className={cn('p-2 rounded-lg border flex-shrink-0', colorMap[account.type])}>
-                  <Icon className="w-4 h-4" />
+                <div className="flex items-center gap-1">
+                  <div className={cn('p-2 rounded-lg border flex-shrink-0', colorMap[account.type])}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <ActionsMenu items={[
+                    { label: 'Desactivar', icon: PowerOff, onClick: () => setConfirmDeact(account), danger: true },
+                  ]} />
                 </div>
               </div>
               <p className={cn('text-2xl font-bold tabular-nums', isNegative ? 'text-red-400' : 'text-content-primary')}>
@@ -129,6 +137,19 @@ export function AccountsPage() {
           </span>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeact}
+        title="Desactivar cuenta"
+        description={`¿Desactivar "${confirmDeact?.name}"? No aparecerá en nuevas transacciones pero conservará su historial.`}
+        confirmLabel="Desactivar"
+        variant="warning"
+        onConfirm={() => {
+          if (confirmDeact) deactivateAccount.mutate({ id: confirmDeact.id, workspaceId: wsId })
+          setConfirmDeact(null)
+        }}
+        onCancel={() => setConfirmDeact(null)}
+      />
     </div>
   )
 }

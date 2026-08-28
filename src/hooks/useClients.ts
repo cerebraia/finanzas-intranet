@@ -68,6 +68,32 @@ export function useAddClientService() {
   })
 }
 
+export function useArchiveClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId }: { id: string; workspaceId: string }) =>
+      clientsService.archive(id, workspaceId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['clients', vars.workspaceId] })
+      toast.success('Cliente archivado')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
+export function useDeleteClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId }: { id: string; workspaceId: string }) =>
+      clientsService.delete(id, workspaceId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['clients', vars.workspaceId] })
+      toast.success('Cliente eliminado')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
 export function useServiceCatalog(workspaceId: string) {
   return useQuery({
     queryKey: ['service-catalog', workspaceId],

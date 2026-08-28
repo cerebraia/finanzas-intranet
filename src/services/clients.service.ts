@@ -255,6 +255,32 @@ export const clientsService = {
     return { collected: r.collected, directCosts: r.directCosts, margin: r.margin, marginPct: r.marginPct }
   },
 
+  async archive(id: string, workspaceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('clients')
+      .update({ status: 'INACTIVE' })
+      .eq('id', id)
+      .eq('workspace_id', workspaceId)
+    if (error) throw new Error(error.message)
+  },
+
+  async hasActivity(clientId: string): Promise<boolean> {
+    const { count } = await supabase
+      .from('receivables')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+    return (count ?? 0) > 0
+  },
+
+  async delete(id: string, workspaceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id)
+      .eq('workspace_id', workspaceId)
+    if (error) throw new Error(error.message)
+  },
+
   async listCatalog(workspaceId: string): Promise<{ id: string; name: string; basePrice: number; billingMode: string }[]> {
     const { data, error } = await supabase
       .from('services')

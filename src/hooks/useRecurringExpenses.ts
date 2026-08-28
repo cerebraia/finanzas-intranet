@@ -61,6 +61,33 @@ export function usePayRecurringExpense() {
   })
 }
 
+export function useToggleRecurringExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isActive, workspaceId: _wsId }: { id: string; isActive: boolean; workspaceId: string }) =>
+      recurringExpensesService.toggleActive(id, isActive),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['recurring-expenses', vars.workspaceId] })
+      toast.success(vars.isActive ? 'Gasto fijo activado' : 'Gasto fijo desactivado')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
+export function useDeleteRecurringExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId: _wsId }: { id: string; workspaceId: string }) =>
+      recurringExpensesService.delete(id),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['recurring-expenses', vars.workspaceId] })
+      qc.invalidateQueries({ queryKey: ['pending-items'] })
+      toast.success('Gasto fijo eliminado')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
 export function useGenerateRecurring() {
   const qc = useQueryClient()
   return useMutation({

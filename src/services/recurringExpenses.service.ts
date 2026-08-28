@@ -98,6 +98,30 @@ export const recurringExpensesService = {
     return result
   },
 
+  async toggleActive(id: string, isActive: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('recurring_expenses')
+      .update({ is_active: isActive })
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+  },
+
+  async hasHistory(id: string): Promise<boolean> {
+    const { count } = await supabase
+      .from('recurring_expense_obligations')
+      .select('id', { count: 'exact', head: true })
+      .eq('recurring_expense_id', id)
+    return (count ?? 0) > 0
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('recurring_expenses')
+      .delete()
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+  },
+
   async generate(workspaceId: string, month: number, year: number): Promise<{ created: string[]; skipped: string[] }> {
     const { data, error } = await supabase.rpc('generate_recurring_obligations', {
       p_workspace_id: workspaceId,
