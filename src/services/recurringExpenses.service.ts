@@ -26,7 +26,7 @@ function mapExpense(row: Record<string, unknown>): ApiRecurringExpense {
   }
 }
 
-const JOIN = `*, categories:category_id(id, name, color), accounts:default_account_id(id, name)`
+const JOIN = `*, categories:category_id(id, name), accounts:default_account_id(id, name)`
 
 export const recurringExpensesService = {
   async list(workspaceId: string): Promise<ApiRecurringExpense[]> {
