@@ -37,6 +37,8 @@ export const pendingItemsService = {
       dueDate:       r.due_date,
       status:        r.status,
       workspaceId:   r.workspace_id,
+      entityId:      r.entity_id,
+      direction:     (r.direction === 'INCOMING' ? 'INCOMING' : 'OUTGOING') as 'INCOMING' | 'OUTGOING',
     }))
   },
 }

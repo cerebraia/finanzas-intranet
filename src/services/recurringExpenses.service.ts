@@ -106,6 +106,27 @@ export const recurringExpensesService = {
     if (error) throw new Error(error.message)
   },
 
+  async payObligationById(
+    obligationId: string,
+    workspaceId: string,
+    data: { accountId: string; paymentDate: string; reference?: string }
+  ): Promise<unknown> {
+    const { data: oblig, error: fetchErr } = await supabase
+      .from('recurring_expense_obligations')
+      .select('recurring_expense_id, period_month, period_year')
+      .eq('id', obligationId)
+      .single()
+    if (fetchErr) throw new Error(fetchErr.message)
+    const o = oblig as { recurring_expense_id: string; period_month: number; period_year: number }
+    return recurringExpensesService.pay(o.recurring_expense_id, workspaceId, {
+      month:       o.period_month,
+      year:        o.period_year,
+      accountId:   data.accountId,
+      paymentDate: data.paymentDate,
+      reference:   data.reference,
+    })
+  },
+
   async hasHistory(id: string): Promise<boolean> {
     const { count } = await supabase
       .from('recurring_expense_obligations')

@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Landmark, Plus, Eye, TrendingDown, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
-import { PageHeader, Card } from '@/components/ui'
-import { NewDebtModal }           from '@/components/modals/NewDebtModal'
+import {
+  Landmark, Plus, Eye, TrendingDown, Clock, CheckCircle2,
+  AlertCircle, Pencil, Archive, Trash2, CreditCard,
+} from 'lucide-react'
+import { PageHeader, Card, ConfirmDialog, ActionsMenu } from '@/components/ui'
+import { NewDebtModal }            from '@/components/modals/NewDebtModal'
+import { EditDebtModal }           from '@/components/modals/EditDebtModal'
 import { InstallmentPaymentModal } from '@/components/modals/InstallmentPaymentModal'
-import { useWorkspace }           from '@/context/WorkspaceContext'
-import { useDebts, useCommitmentSummary } from '@/hooks/useDebts'
+import { useWorkspace }            from '@/context/WorkspaceContext'
+import { useDebts, useCommitmentSummary, useArchiveDebt, useDeleteDebt } from '@/hooks/useDebts'
+import { debtsService }            from '@/services/debts.service'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import type { ApiDebt, ApiDebtInstallment, DebtStatus, DebtType } from '@/types/api'
 
 const debtTypeLabel: Record<DebtType, string> = {
@@ -35,13 +41,19 @@ export function DebtsPage() {
   const wsId = activeWorkspace.id
   const navigate = useNavigate()
 
-  const [newModal, setNewModal]     = useState(false)
-  const [payModal, setPayModal]     = useState(false)
-  const [selectedInst, setSelectedInst] = useState<ApiDebtInstallment | null>(null)
-  const [selectedDebt, setSelectedDebt] = useState<ApiDebt | null>(null)
+  const [newModal,       setNewModal]       = useState(false)
+  const [editingDebt,    setEditingDebt]    = useState<ApiDebt | null>(null)
+  const [payModal,       setPayModal]       = useState(false)
+  const [selectedInst,   setSelectedInst]   = useState<ApiDebtInstallment | null>(null)
+  const [selectedDebt,   setSelectedDebt]   = useState<ApiDebt | null>(null)
+  const [confirmArchive, setConfirmArchive] = useState<ApiDebt | null>(null)
+  const [confirmDelete,  setConfirmDelete]  = useState<ApiDebt | null>(null)
+  const [blockedMsg,     setBlockedMsg]     = useState<string | null>(null)
 
   const { data: debts = [], isLoading, isError, refetch } = useDebts(wsId)
-  const { data: commitment }            = useCommitmentSummary(wsId)
+  const { data: commitment } = useCommitmentSummary(wsId)
+  const archiveDebt = useArchiveDebt()
+  const deleteDebt  = useDeleteDebt()
 
   const totalDebt    = debts.reduce((s, d) => s + (d.summary?.outstanding ?? 0), 0)
   const totalPaid    = debts.reduce((s, d) => s + (d.summary?.totalPaid ?? 0), 0)
@@ -51,6 +63,51 @@ export function DebtsPage() {
     setSelectedDebt(debt)
     setSelectedInst(inst)
     setPayModal(true)
+  }
+
+  function closePayModal() {
+    setPayModal(false)
+    setSelectedInst(null)
+    setSelectedDebt(null)
+  }
+
+  async function handleArchiveOrDelete(debt: ApiDebt) {
+    try {
+      const hasPayments = await debtsService.hasPayments(debt.id)
+      if (hasPayments) {
+        setConfirmArchive(debt)
+      } else {
+        setConfirmDelete(debt)
+      }
+    } catch {
+      toast.error('No pudimos verificar el estado de la deuda.')
+    }
+  }
+
+  async function handleDeleteCheck(debt: ApiDebt) {
+    try {
+      const hasPayments = await debtsService.hasPayments(debt.id)
+      if (hasPayments) {
+        setBlockedMsg(`"${debt.name}" tiene pagos registrados y no puede eliminarse. Puedes archivarla.`)
+      } else {
+        setConfirmDelete(debt)
+      }
+    } catch {
+      toast.error('No pudimos verificar el estado de la deuda.')
+    }
+  }
+
+  function DebtActionsMenu({ debt }: { debt: ApiDebt }) {
+    const next = debt.summary?.nextInstallment
+    return (
+      <ActionsMenu items={[
+        { label: 'Ver detalle', icon: Eye,      onClick: () => navigate(`/deudas/${debt.id}`) },
+        { label: 'Editar',      icon: Pencil,   onClick: () => setEditingDebt(debt) },
+        ...(next ? [{ label: 'Registrar pago', icon: CreditCard, onClick: () => openPay(debt, next) }] : []),
+        { label: 'Archivar / Cancelar', icon: Archive, onClick: () => handleArchiveOrDelete(debt), separator: true },
+        { label: 'Eliminar',   icon: Trash2,   onClick: () => handleDeleteCheck(debt), danger: true },
+      ]} />
+    )
   }
 
   return (
@@ -87,7 +144,7 @@ export function DebtsPage() {
         ))}
       </div>
 
-      {/* Card de dinero real disponible */}
+      {/* Liquidez */}
       {commitment && (
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-content-muted mb-3">Análisis de liquidez</p>
@@ -138,7 +195,7 @@ export function DebtsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-base-border">
-                    {['Nombre', 'Tipo', 'Total', 'Pagado', 'Pendiente', 'Próxima cuota', 'Estado', 'Acciones'].map(h => (
+                    {['Nombre', 'Tipo', 'Total', 'Pagado', 'Pendiente', 'Próxima cuota', 'Estado', ''].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-content-muted">{h}</th>
                     ))}
                   </tr>
@@ -172,13 +229,14 @@ export function DebtsPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {next && (
-                              <button onClick={() => openPay(debt, next)} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                              <button
+                                onClick={() => openPay(debt, next)}
+                                className="px-2.5 py-1 rounded-lg bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-semibold transition-all"
+                              >
                                 Pagar
                               </button>
                             )}
-                            <button onClick={() => navigate(`/deudas/${debt.id}`)} className="flex items-center gap-1 text-xs text-content-muted hover:text-content-primary transition-colors">
-                              <Eye className="w-3 h-3" />
-                            </button>
+                            <DebtActionsMenu debt={debt} />
                           </div>
                         </td>
                       </tr>
@@ -199,11 +257,13 @@ export function DebtsPage() {
                         <p className="font-medium text-content-primary text-sm">{debt.name}</p>
                         <p className="text-xs text-content-muted">{debtTypeLabel[debt.type]}{debt.provider ? ` — ${debt.provider}` : ''}</p>
                       </div>
-                      <span className={cn('inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-medium flex-shrink-0', debtStatusCls[debt.status])}>
-                        {debtStatusLabel[debt.status]}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-medium flex-shrink-0', debtStatusCls[debt.status])}>
+                          {debtStatusLabel[debt.status]}
+                        </span>
+                        <DebtActionsMenu debt={debt} />
+                      </div>
                     </div>
-                    {/* Progress bar */}
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-content-muted">
                         <span>Pagado {formatCurrency(debt.summary?.totalPaid ?? 0)}</span>
@@ -214,16 +274,14 @@ export function DebtsPage() {
                       </div>
                       <p className="text-xs text-amber-400 font-semibold">Pendiente: {formatCurrency(debt.summary?.outstanding ?? 0)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {next && (
-                        <button onClick={() => openPay(debt, next)} className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all">
-                          Pagar cuota {next.number}
-                        </button>
-                      )}
-                      <button onClick={() => navigate(`/deudas/${debt.id}`)} className="px-3 py-1.5 rounded-lg border border-base-border text-xs text-content-muted hover:text-content-primary transition-colors">
-                        Ver detalle
+                    {next && (
+                      <button
+                        onClick={() => openPay(debt, next)}
+                        className="w-full py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all"
+                      >
+                        Pagar cuota {next.number} — {formatCurrency(Number(next.amount) - Number(next.amountPaid))}
                       </button>
-                    </div>
+                    )}
                   </div>
                 )
               })}
@@ -232,13 +290,62 @@ export function DebtsPage() {
         )}
       </Card>
 
+      {/* Modals */}
       <NewDebtModal open={newModal} onClose={() => setNewModal(false)} workspaceId={wsId} />
+
+      <EditDebtModal
+        open={!!editingDebt}
+        onClose={() => setEditingDebt(null)}
+        debt={editingDebt}
+      />
+
       <InstallmentPaymentModal
         open={payModal}
-        onClose={() => { setPayModal(false); setSelectedInst(null); setSelectedDebt(null) }}
+        onClose={closePayModal}
         installment={selectedInst}
         debtId={selectedDebt?.id ?? ''}
         debtName={selectedDebt?.name ?? ''}
+      />
+
+      <ConfirmDialog
+        open={!!confirmArchive}
+        title="Archivar deuda"
+        description={`¿Archivar "${confirmArchive?.name}"? La deuda quedará cancelada pero se conservará todo el historial de pagos.`}
+        confirmLabel="Archivar"
+        variant="warning"
+        onConfirm={() => {
+          if (confirmArchive) archiveDebt.mutate({ id: confirmArchive.id, workspaceId: wsId })
+          setConfirmArchive(null)
+        }}
+        onCancel={() => setConfirmArchive(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Eliminar deuda"
+        description={`¿Eliminar "${confirmDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDelete) deleteDebt.mutate({ id: confirmDelete.id, workspaceId: wsId })
+          setConfirmDelete(null)
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!blockedMsg}
+        title="No se puede eliminar"
+        description={blockedMsg ?? ''}
+        confirmLabel="Archivar en su lugar"
+        cancelLabel="Cerrar"
+        variant="warning"
+        onConfirm={() => {
+          const debt = debts.find(d => blockedMsg?.includes(`"${d.name}"`))
+          if (debt) setConfirmArchive(debt)
+          setBlockedMsg(null)
+        }}
+        onCancel={() => setBlockedMsg(null)}
       />
     </div>
   )

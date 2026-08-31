@@ -264,11 +264,13 @@ export const clientsService = {
     if (error) throw new Error(error.message)
   },
 
-  async hasActivity(clientId: string): Promise<boolean> {
-    const { count } = await supabase
+  async hasActivity(clientId: string, workspaceId?: string): Promise<boolean> {
+    let query = supabase
       .from('receivables')
       .select('id', { count: 'exact', head: true })
       .eq('client_id', clientId)
+    if (workspaceId) query = query.eq('workspace_id', workspaceId)
+    const { count } = await query
     return (count ?? 0) > 0
   },
 

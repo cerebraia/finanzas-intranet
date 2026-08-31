@@ -372,6 +372,8 @@ export interface PendingItem {
   dueDate:       string
   status:        string
   workspaceId:   string
+  entityId:      string
+  direction:     'INCOMING' | 'OUTGOING'
 }
 
 export interface RegisterPayrollPaymentInput {

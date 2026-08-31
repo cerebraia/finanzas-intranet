@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Users, Plus, Pencil, ExternalLink, TrendingUp, Clock, DollarSign, AlertCircle, Archive, Trash2 } from 'lucide-react'
+import { Users, Plus, Pencil, ExternalLink, TrendingUp, Clock, DollarSign, AlertCircle, Archive, Trash2, CircleDollarSign } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader, EmptyState, Badge, ConfirmDialog, ActionsMenu } from '@/components/ui'
-import { ClientModal } from '@/components/modals/ClientModal'
-import { useWorkspace } from '@/context/WorkspaceContext'
+import { ClientModal }        from '@/components/modals/ClientModal'
+import { ClientPaymentModal } from '@/components/modals/ClientPaymentModal'
+import { useWorkspace }       from '@/context/WorkspaceContext'
 import { useClients, useArchiveClient, useDeleteClient } from '@/hooks/useClients'
-import { clientsService } from '@/services/clients.service'
+import { clientsService }     from '@/services/clients.service'
 import { useBusinessDashboard } from '@/hooks/useBusinessAnalytics'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency }     from '@/lib/utils'
+import { toast }              from 'sonner'
 import type { ApiClient, ClientStatus } from '@/types/api'
 
 function StatusBadge({ status }: { status: ClientStatus }) {
@@ -33,6 +35,7 @@ export function ClientsPage() {
   const [confirmArchive, setConfirmArchive] = useState<ApiClient | null>(null)
   const [confirmDelete,  setConfirmDelete]  = useState<ApiClient | null>(null)
   const [blockedMsg,     setBlockedMsg]     = useState<string | null>(null)
+  const [paymentClient,  setPaymentClient]  = useState<ApiClient | null>(null)
 
   const archiveClient = useArchiveClient()
   const deleteClient  = useDeleteClient()
@@ -50,6 +53,32 @@ export function ClientsPage() {
     { label: 'Cobrado este mes',    value: formatCurrency(biz?.collected ?? 0), icon: DollarSign },
     { label: 'Pendiente cobrar',    value: formatCurrency(biz?.pending ?? 0),   icon: Clock },
   ]
+
+  async function handleArchiveOrDelete(client: ApiClient) {
+    try {
+      const hasAct = await clientsService.hasActivity(client.id, wsId)
+      if (hasAct) {
+        setConfirmArchive(client)
+      } else {
+        setConfirmDelete(client)
+      }
+    } catch {
+      toast.error('No pudimos verificar el historial del cliente.')
+    }
+  }
+
+  async function handleDeleteCheck(client: ApiClient) {
+    try {
+      const hasAct = await clientsService.hasActivity(client.id, wsId)
+      if (hasAct) {
+        setBlockedMsg(`"${client.name}" tiene historial de cobros y no puede eliminarse. Puedes archivarlo.`)
+      } else {
+        setConfirmDelete(client)
+      }
+    } catch {
+      toast.error('No pudimos verificar el historial del cliente.')
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -141,26 +170,21 @@ export function ClientsPage() {
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={client.status} /></td>
                       <td className="px-4 py-3">
-                        <ActionsMenu items={[
-                          { label: 'Ver perfil', icon: ExternalLink, onClick: () => navigate(`/clients/${client.id}`) },
-                          { label: 'Editar',     icon: Pencil,       onClick: () => { setEditing(client); setModalOpen(true) } },
-                          { label: 'Archivar',   icon: Archive,      onClick: async () => {
-                            const hasAct = await clientsService.hasActivity(client.id)
-                            if (hasAct) {
-                              setConfirmArchive(client)
-                            } else {
-                              setConfirmDelete(client)
-                            }
-                          }, separator: true },
-                          { label: 'Eliminar',   icon: Trash2,       onClick: async () => {
-                            const hasAct = await clientsService.hasActivity(client.id)
-                            if (hasAct) {
-                              setBlockedMsg(`"${client.name}" tiene historial de cobros y no puede eliminarse. Puedes archivarlo.`)
-                            } else {
-                              setConfirmDelete(client)
-                            }
-                          }, danger: true },
-                        ]} />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setPaymentClient(client)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 text-xs font-semibold transition-all"
+                          >
+                            Cobrar
+                          </button>
+                          <ActionsMenu items={[
+                            { label: 'Ver perfil',        icon: ExternalLink,      onClick: () => navigate(`/clients/${client.id}`) },
+                            { label: 'Editar',            icon: Pencil,            onClick: () => { setEditing(client); setModalOpen(true) } },
+                            { label: 'Registrar cobro',   icon: CircleDollarSign,  onClick: () => setPaymentClient(client) },
+                            { label: 'Archivar',          icon: Archive,           onClick: () => handleArchiveOrDelete(client), separator: true },
+                            { label: 'Eliminar',          icon: Trash2,            onClick: () => handleDeleteCheck(client), danger: true },
+                          ]} />
+                        </div>
                       </td>
                     </tr>
                   )
@@ -172,6 +196,15 @@ export function ClientsPage() {
       )}
 
       <ClientModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null) }} editingClient={editing} />
+
+      {paymentClient && (
+        <ClientPaymentModal
+          open={!!paymentClient}
+          onClose={() => setPaymentClient(null)}
+          clientId={paymentClient.id}
+          clientName={paymentClient.name}
+        />
+      )}
 
       <ConfirmDialog
         open={!!confirmArchive}

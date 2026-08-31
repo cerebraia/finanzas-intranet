@@ -78,6 +78,30 @@ export const payrollService = {
     }
   },
 
+  async payObligationById(
+    obligationId: string,
+    workspaceId: string,
+    data: { accountId: string; amount: number; paymentDate: string; reference?: string; notes?: string; idempotencyKey?: string }
+  ): Promise<unknown> {
+    const { data: oblig, error: fetchErr } = await supabase
+      .from('payroll_obligations')
+      .select('employee_id')
+      .eq('id', obligationId)
+      .single()
+    if (fetchErr) throw new Error(fetchErr.message)
+    const { employee_id } = oblig as { employee_id: string }
+    return payrollService.registerPayment(obligationId, {
+      workspaceId,
+      employeeId:     employee_id,
+      accountId:      data.accountId,
+      amount:         data.amount,
+      paymentDate:    data.paymentDate,
+      reference:      data.reference,
+      notes:          data.notes,
+      idempotencyKey: data.idempotencyKey,
+    })
+  },
+
   async cancelPayment(paymentId: string, workspaceId: string): Promise<{ cancelled: boolean }> {
     const { data, error } = await supabase.rpc('cancel_payroll_payment', {
       p_workspace_id: workspaceId,

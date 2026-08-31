@@ -217,6 +217,33 @@ export const debtsService = {
     }
   },
 
+  async hasPayments(debtId: string): Promise<boolean> {
+    const { count } = await supabase
+      .from('debt_payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('debt_id', debtId)
+      .eq('cancelled', false)
+    return (count ?? 0) > 0
+  },
+
+  async archive(id: string, workspaceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('debts')
+      .update({ status: 'CANCELLED' })
+      .eq('id', id)
+      .eq('workspace_id', workspaceId)
+    if (error) throw new Error(error.message)
+  },
+
+  async delete(id: string, workspaceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('debts')
+      .delete()
+      .eq('id', id)
+      .eq('workspace_id', workspaceId)
+    if (error) throw new Error(error.message)
+  },
+
   // Compatibilidad con hook existente
   async generateInstallments(_debtId: string, _workspaceId: string) {
     return { created: [], skipped: [] }

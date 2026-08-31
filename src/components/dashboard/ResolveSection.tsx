@@ -51,7 +51,7 @@ export function normalizePendingItems(items: PendingItem[]): ResolveItem[] {
     currency:   'USD',
     dueDate:    i.dueDate,
     status:     i.status,
-    direction:  (i as { direction?: string }).direction as 'INCOMING' | 'OUTGOING' | null ?? null,
+    direction:  i.direction ?? null,
     path:       SOURCE_PATHS[i.sourceType] ?? '/pending',
   }))
 }
@@ -136,14 +136,15 @@ const BUCKET_CONFIG: Record<TimeBucket, { label: string; icon: React.ElementType
 }
 
 interface Props {
-  pendingItems: PendingItem[]
-  purchases:    PurchaseItem[]
-  reminders:    Reminder[]
-  privacyMode:  boolean
-  onComplete?:  (id: string) => void
+  pendingItems:  PendingItem[]
+  purchases:     PurchaseItem[]
+  reminders:     Reminder[]
+  privacyMode:   boolean
+  onComplete?:   (id: string) => void
+  onPayPending?: (item: PendingItem) => void
 }
 
-export function ResolveSection({ pendingItems, purchases, reminders, privacyMode, onComplete }: Props) {
+export function ResolveSection({ pendingItems, purchases, reminders, privacyMode, onComplete, onPayPending }: Props) {
   const navigate = useNavigate()
 
   const all = [
@@ -193,6 +194,9 @@ export function ResolveSection({ pendingItems, purchases, reminders, privacyMode
                 privacyMode={privacyMode}
                 onNavigate={() => navigate(item.path)}
                 onComplete={item.source === 'REMINDER' && onComplete ? () => onComplete(item.id) : undefined}
+                onPay={item.source === 'PENDING' && onPayPending
+                  ? () => onPayPending(pendingItems.find(p => p.id === item.id)!)
+                  : undefined}
               />
             ))}
 
@@ -212,12 +216,13 @@ export function ResolveSection({ pendingItems, purchases, reminders, privacyMode
 }
 
 function ResolveItemRow({
-  item, privacyMode, onNavigate, onComplete,
+  item, privacyMode, onNavigate, onComplete, onPay,
 }: {
   item:        ResolveItem
   privacyMode: boolean
   onNavigate:  () => void
   onComplete?: () => void
+  onPay?:      () => void
 }) {
   const formatDate = (d: string) => {
     const [, m, day] = d.split('-')
@@ -258,6 +263,16 @@ function ResolveItemRow({
 
       {/* Actions */}
       <div className="flex items-center gap-1 flex-shrink-0">
+        {onPay && (
+          <button
+            onClick={e => { e.stopPropagation(); onPay() }}
+            className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 rounded-lg font-medium transition-all"
+            style={{ background: item.direction === 'INCOMING' ? 'rgba(16,185,129,.15)' : 'rgba(99,102,241,.15)',
+                     color: item.direction === 'INCOMING' ? '#34d399' : '#818cf8' }}
+          >
+            {item.direction === 'INCOMING' ? 'Cobrar' : 'Pagar'}
+          </button>
+        )}
         {onComplete && (
           <button
             onClick={e => { e.stopPropagation(); onComplete() }}

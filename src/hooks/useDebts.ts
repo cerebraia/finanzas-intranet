@@ -67,6 +67,36 @@ export function useRegisterDebtPayment() {
   })
 }
 
+export function useArchiveDebt() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId }: { id: string; workspaceId: string }) =>
+      debtsService.archive(id, workspaceId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['debts', vars.workspaceId] })
+      qc.invalidateQueries({ queryKey: ['pending-items'] })
+      qc.invalidateQueries({ queryKey: ['commitment-summary'] })
+      toast.success('Deuda archivada')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
+export function useDeleteDebt() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId }: { id: string; workspaceId: string }) =>
+      debtsService.delete(id, workspaceId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['debts', vars.workspaceId] })
+      qc.invalidateQueries({ queryKey: ['pending-items'] })
+      qc.invalidateQueries({ queryKey: ['commitment-summary'] })
+      toast.success('Deuda eliminada')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
 export function useCommitmentSummary(workspaceId: string) {
   return useQuery({
     queryKey: ['commitment-summary', workspaceId],
