@@ -4,15 +4,36 @@
 
 @layer base {
   :root {
-    --scrollbar-thumb: #2a2440;
-    --scrollbar-track: #13101e;
+    /* ── Tokens MYD3000 ────────────────────────────────────── */
+    --myd-navy:          #0F2244;
+    --myd-navy-hover:    #16305E;
+    --myd-navy-active:   #1A3A70;
+    --myd-navy-border:   #192E54;
+
+    --myd-blue:          #1D4ED8;
+    --myd-blue-hover:    #1E40AF;
+
+    --myd-background:    #F4F6FA;
+    --myd-surface:       #FFFFFF;
+    --myd-elevated:      #EEF2F8;
+    --myd-border:        #DDE3EE;
+
+    --myd-text:          #0F172A;
+    --myd-text-secondary:#334155;
+    --myd-text-muted:    #64748B;
+
+    --myd-success:       #059669;
+    --myd-warning:       #D97706;
+    --myd-danger:        #DC2626;
+
+    --scrollbar-thumb:   #C8D0E0;
+    --scrollbar-track:   #EEF2F8;
   }
 
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   html {
+    font-family: Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -20,29 +41,24 @@
   body {
     @apply bg-base text-content-primary font-sans;
     min-height: 100dvh;
+    font-family: Helvetica, Arial, sans-serif;
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #3d3760;
-  }
+  /* Scrollbar ────────────────────────────────────────────── */
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9AAABF; }
 }
 
 @layer utilities {
   .sidebar-transition {
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* Clase auxiliar para el sidebar navy */
+  .sidebar-bg      { background-color: var(--myd-navy); }
+  .sidebar-border  { border-color: var(--myd-navy-border); }
+  .sidebar-hover   { background-color: var(--myd-navy-hover); }
+  .sidebar-active  { background-color: var(--myd-navy-active); }
 }

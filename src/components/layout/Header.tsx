@@ -42,7 +42,7 @@ export function Header({ onOpenMobile }: HeaderProps) {
   const unreadCount = pendingItems.length
 
   return (
-    <header className="flex items-center h-14 px-4 md:px-5 border-b border-base-border bg-base flex-shrink-0 gap-3">
+    <header className="flex items-center h-14 px-4 md:px-5 border-b border-base-border bg-base-surface flex-shrink-0 gap-3">
       {/* Mobile menu */}
       <button
         onClick={onOpenMobile}

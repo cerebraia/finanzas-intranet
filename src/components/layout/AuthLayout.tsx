@@ -1,33 +1,57 @@
 import type { ReactNode } from 'react'
-import { Zap } from 'lucide-react'
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-base flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background gradients */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand-600/10 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-brand-500/8 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-600/5 blur-3xl" />
+    <div className="min-h-dvh flex">
+      {/* ── Panel izquierdo — navy brand ─────────────────── */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[42%] p-12"
+        style={{ backgroundColor: 'var(--myd-navy)' }}
+      >
+        {/* Logo */}
+        <img
+          src="/logo-myd3000.svg"
+          alt="MYD3000"
+          className="h-9 w-auto object-contain object-left"
+          draggable={false}
+        />
+
+        {/* Tagline */}
+        <div>
+          <p className="text-2xl font-semibold text-white leading-snug mb-3">
+            Gestión financiera<br />interna MYD3000.
+          </p>
+          <p className="text-sm text-white/45">
+            Acceso restringido — solo personal autorizado.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <p className="text-[11px] text-white/25">
+          © {new Date().getFullYear()} MYD3000. Sistema interno.
+        </p>
       </div>
 
-      {/* Logo + card */}
-      <div className="relative w-full max-w-sm space-y-6">
-        {/* Logo */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-600 shadow-glow mx-auto">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-content-primary">Finanzas</p>
-            <p className="text-xs text-content-muted">Intranet Financiera</p>
-          </div>
+      {/* ── Panel derecho — formulario ───────────────────── */}
+      <div className="flex flex-1 flex-col items-center justify-center bg-base p-6">
+        {/* Logo mobile (solo visible < lg) */}
+        <div className="lg:hidden mb-8">
+          <img
+            src="/logo-myd3000-dark.svg"
+            alt="MYD3000"
+            className="h-8 w-auto object-contain"
+            draggable={false}
+          />
         </div>
 
-        {/* Content card */}
-        <div className="rounded-2xl border border-base-border bg-base-surface p-6 shadow-glow backdrop-blur-sm">
+        {/* Card del formulario */}
+        <div className="w-full max-w-sm bg-base-surface border border-base-border rounded-xl shadow-card p-8">
           {children}
         </div>
+
+        <p className="mt-6 text-[11px] text-content-disabled">
+          © {new Date().getFullYear()} MYD3000 — Uso interno
+        </p>
       </div>
     </div>
   )
