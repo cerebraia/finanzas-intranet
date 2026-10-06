@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PiggyBank, Plus, Eye, AlertCircle, CheckCircle2, Circle } from 'lucide-react'
-import { PageHeader, Card } from '@/components/ui'
-import { NewDebtModal }           from '@/components/modals/NewDebtModal'
-import { InstallmentPaymentModal } from '@/components/modals/InstallmentPaymentModal'
-import { useWorkspace }           from '@/context/WorkspaceContext'
-import { useDebts }               from '@/hooks/useDebts'
+import { PiggyBank, Plus, Eye, AlertCircle, CheckCircle2, Circle, Pencil, Archive, Trash2 } from 'lucide-react'
+import { PageHeader, Card, ActionsMenu, ConfirmDialog, QuickPayButton } from '@/components/ui'
+import { NewDebtModal }      from '@/components/modals/NewDebtModal'
+import { EditDebtModal }     from '@/components/modals/EditDebtModal'
+import { useWorkspace }      from '@/context/WorkspaceContext'
+import { useDebts, useArchiveDebt, useDeleteDebt } from '@/hooks/useDebts'
+import { debtsService }      from '@/services/debts.service'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
-import type { ApiDebt, ApiDebtInstallment, InstallmentStatus } from '@/types/api'
+import { toast } from 'sonner'
+import type { ApiDebt, InstallmentStatus } from '@/types/api'
 
 function StatusIcon({ s }: { s: InstallmentStatus }) {
   if (s === 'PAID')    return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -20,18 +22,30 @@ export function SANPage() {
   const wsId = activeWorkspace.id
   const navigate = useNavigate()
 
-  const [newModal, setNewModal]     = useState(false)
-  const [payModal, setPayModal]     = useState(false)
-  const [selectedInst, setSelectedInst] = useState<ApiDebtInstallment | null>(null)
-  const [selectedDebt, setSelectedDebt] = useState<ApiDebt | null>(null)
+  const [newModal,       setNewModal]       = useState(false)
+  const [editingDebt,    setEditingDebt]    = useState<ApiDebt | null>(null)
+  const [confirmArchive, setConfirmArchive] = useState<ApiDebt | null>(null)
+  const [confirmDelete,  setConfirmDelete]  = useState<ApiDebt | null>(null)
+  const [blockedMsg,     setBlockedMsg]     = useState<string | null>(null)
 
   const { data: debts = [], isLoading } = useDebts(wsId, 'SAN')
+  const archiveDebt = useArchiveDebt()
+  const deleteDebt  = useDeleteDebt()
 
   const totalDebt    = debts.reduce((s, d) => s + (d.summary?.outstanding ?? 0), 0)
   const pendingCount = debts.reduce((s, d) => s + (d.summary?.pendingCount ?? 0), 0)
 
-  function openPay(debt: ApiDebt, inst: ApiDebtInstallment) {
-    setSelectedDebt(debt); setSelectedInst(inst); setPayModal(true)
+  async function handleDeleteCheck(debt: ApiDebt) {
+    try {
+      const hasPayments = await debtsService.hasPayments(debt.id)
+      if (hasPayments) {
+        setBlockedMsg(`"${debt.name}" tiene pagos registrados y no puede eliminarse. Puedes archivarla.`)
+      } else {
+        setConfirmDelete(debt)
+      }
+    } catch {
+      toast.error('No pudimos verificar el estado de la deuda.')
+    }
   }
 
   return (
@@ -76,9 +90,17 @@ export function SANPage() {
                   <p className="font-semibold text-content-primary">{debt.name}</p>
                   {debt.provider && <p className="text-xs text-content-muted">{debt.provider}</p>}
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-amber-400">{formatCurrency(debt.summary?.outstanding ?? 0)}</p>
-                  <p className="text-xs text-content-muted">pendiente</p>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-amber-400">{formatCurrency(debt.summary?.outstanding ?? 0)}</p>
+                    <p className="text-xs text-content-muted">pendiente</p>
+                  </div>
+                  <ActionsMenu items={[
+                    { label: 'Ver detalle', icon: Eye,     onClick: () => navigate(`/deudas/${debt.id}`) },
+                    { label: 'Editar',      icon: Pencil,  onClick: () => setEditingDebt(debt) },
+                    { label: 'Archivar',    icon: Archive, onClick: () => setConfirmArchive(debt), separator: true },
+                    { label: 'Eliminar',    icon: Trash2,  onClick: () => handleDeleteCheck(debt), danger: true },
+                  ]} />
                 </div>
               </div>
 
@@ -100,20 +122,29 @@ export function SANPage() {
                       <span className="text-xs text-content-primary">Cuota {inst.number}</span>
                       <span className="text-xs text-content-disabled">{formatDate(inst.dueDate)}</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold tabular-nums">{formatCurrency(Number(inst.amount) - Number(inst.amountPaid))}</span>
-                      <button onClick={() => openPay(debt, inst)} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                        Pagar
-                      </button>
+                      <QuickPayButton
+                        item={{
+                          id:            inst.id,
+                          sourceType:    'DEBT',
+                          title:         debt.name,
+                          description:   `Cuota ${inst.number}`,
+                          amount:        Number(inst.amount),
+                          amountPaid:    Number(inst.amountPaid),
+                          pendingAmount: Number(inst.amount) - Number(inst.amountPaid),
+                          dueDate:       inst.dueDate,
+                          status:        inst.status,
+                          workspaceId:   wsId,
+                          entityId:      inst.id,
+                          direction:     'OUTGOING',
+                        }}
+                        workspaceId={wsId}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="flex justify-end mt-3">
-                <button onClick={() => navigate(`/deudas/${debt.id}`)} className="flex items-center gap-1 text-xs text-content-muted hover:text-content-primary transition-colors">
-                  <Eye className="w-3 h-3" /> Ver detalle
-                </button>
               </div>
             </Card>
           ))}
@@ -121,12 +152,42 @@ export function SANPage() {
       )}
 
       <NewDebtModal open={newModal} onClose={() => setNewModal(false)} workspaceId={wsId} />
-      <InstallmentPaymentModal
-        open={payModal}
-        onClose={() => { setPayModal(false); setSelectedInst(null); setSelectedDebt(null) }}
-        installment={selectedInst}
-        debtId={selectedDebt?.id ?? ''}
-        debtName={selectedDebt?.name ?? ''}
+      <EditDebtModal
+        open={!!editingDebt}
+        onClose={() => setEditingDebt(null)}
+        debt={editingDebt}
+      />
+      <ConfirmDialog
+        open={!!confirmArchive}
+        title="Archivar SAN"
+        description={`¿Archivar "${confirmArchive?.name}"? Se conservará todo el historial de pagos.`}
+        confirmLabel="Archivar"
+        variant="warning"
+        onConfirm={() => { if (confirmArchive) archiveDebt.mutate({ id: confirmArchive.id, workspaceId: wsId }); setConfirmArchive(null) }}
+        onCancel={() => setConfirmArchive(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Eliminar"
+        description={`¿Eliminar "${confirmDelete?.name}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        variant="danger"
+        onConfirm={() => { if (confirmDelete) deleteDebt.mutate({ id: confirmDelete.id, workspaceId: wsId }); setConfirmDelete(null) }}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={!!blockedMsg}
+        title="No se puede eliminar"
+        description={blockedMsg ?? ''}
+        confirmLabel="Archivar en su lugar"
+        cancelLabel="Cerrar"
+        variant="warning"
+        onConfirm={() => {
+          const debt = debts.find(d => blockedMsg?.includes(`"${d.name}"`))
+          if (debt) setConfirmArchive(debt)
+          setBlockedMsg(null)
+        }}
+        onCancel={() => setBlockedMsg(null)}
       />
     </div>
   )

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Wallet, Plus, Building2, Smartphone, Coins, Bitcoin, CreditCard, PowerOff } from 'lucide-react'
+import { Wallet, Plus, Building2, Smartphone, Coins, Bitcoin, CreditCard, PowerOff, Pencil, Check, X as XIcon } from 'lucide-react'
 import { PageHeader, EmptyState, Card, ConfirmDialog, ActionsMenu } from '@/components/ui'
 import { useWorkspace } from '@/context/WorkspaceContext'
-import { useAccounts, useCreateAccount, useDeactivateAccount } from '@/hooks/useAccounts'
+import { useAccounts, useCreateAccount, useDeactivateAccount, useUpdateAccount } from '@/hooks/useAccounts'
 import { formatCurrency, cn } from '@/lib/utils'
 import type { ApiAccount, AccountType } from '@/types/api'
 
@@ -34,11 +34,15 @@ export function AccountsPage() {
   const { data: accounts = [], isLoading } = useAccounts(wsId)
   const createAccount    = useCreateAccount()
   const deactivateAccount = useDeactivateAccount()
+  const updateAccount    = useUpdateAccount()
   const [showForm, setShowForm]       = useState(false)
   const [name, setName]               = useState('')
   const [type, setType]               = useState<AccountType>('BANK')
   const [initial, setInitial]         = useState('')
   const [confirmDeact, setConfirmDeact] = useState<ApiAccount | null>(null)
+  const [editingAccount, setEditingAccount] = useState<ApiAccount | null>(null)
+  const [editName, setEditName]             = useState('')
+  const [editType, setEditType]             = useState<AccountType>('BANK')
 
   const total = accounts.reduce((s, a) => s + a.currentBalance, 0)
 
@@ -54,6 +58,13 @@ export function AccountsPage() {
   }
 
   const inputCls = 'w-full px-3 py-2 rounded-lg border border-base-border bg-base-elevated text-sm text-content-primary placeholder:text-content-disabled focus:outline-none focus:ring-1 focus:ring-brand-600 transition-colors'
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingAccount) return
+    await updateAccount.mutateAsync({ id: editingAccount.id, workspaceId: wsId, data: { name: editName, type: editType } })
+    setEditingAccount(null)
+  }
 
   return (
     <div className="space-y-5">
@@ -114,16 +125,56 @@ export function AccountsPage() {
                     <Icon className="w-4 h-4" />
                   </div>
                   <ActionsMenu items={[
-                    { label: 'Desactivar', icon: PowerOff, onClick: () => setConfirmDeact(account), danger: true },
+                    { label: 'Editar',     icon: Pencil,  onClick: () => { setEditingAccount(account); setEditName(account.name); setEditType(account.type) } },
+                    { label: 'Desactivar', icon: PowerOff, onClick: () => setConfirmDeact(account), danger: true, separator: true },
                   ]} />
                 </div>
               </div>
-              <p className={cn('text-2xl font-bold tabular-nums', isNegative ? 'text-red-400' : 'text-content-primary')}>
-                {formatCurrency(account.currentBalance)}
-              </p>
-              <p className="text-xs text-content-disabled mt-1">
-                Saldo inicial: {formatCurrency(Number(account.initialBalance))}
-              </p>
+              {editingAccount?.id === account.id ? (
+                <form onSubmit={handleUpdate} className="space-y-2 animate-fade-in">
+                  <input
+                    required
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    placeholder="Nombre de la cuenta"
+                    className={inputCls}
+                  />
+                  <select
+                    value={editType}
+                    onChange={e => setEditType(e.target.value as AccountType)}
+                    className={inputCls}
+                  >
+                    {(Object.keys(labelMap) as AccountType[]).map(t => (
+                      <option key={t} value={t}>{labelMap[t]}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingAccount(null)}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-base-border text-xs text-content-muted hover:bg-base-hover transition-colors"
+                    >
+                      <XIcon className="w-3 h-3" /> Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updateAccount.isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                      <Check className="w-3 h-3" /> {updateAccount.isPending ? 'Guardando...' : 'Guardar'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <p className={cn('text-2xl font-bold tabular-nums', isNegative ? 'text-red-400' : 'text-content-primary')}>
+                    {formatCurrency(account.currentBalance)}
+                  </p>
+                  <p className="text-xs text-content-disabled mt-1">
+                    Saldo inicial: {formatCurrency(Number(account.initialBalance))}
+                  </p>
+                </>
+              )}
             </Card>
           )
         })}

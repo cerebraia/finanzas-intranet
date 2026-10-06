@@ -45,6 +45,20 @@ export function useUpdateEmployee() {
   })
 }
 
+export function useUpdatePayrollRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ruleId, workspaceId: _wsId, data }: { ruleId: string; workspaceId: string; data: Parameters<typeof employeesService.updatePayrollRule>[1] }) =>
+      employeesService.updatePayrollRule(ruleId, data),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['employees', vars.workspaceId] })
+      qc.invalidateQueries({ queryKey: ['payroll-obligations'] })
+      toast.success('Condiciones de pago actualizadas')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 export function useAddPayrollRule() {
   const qc = useQueryClient()
   return useMutation({

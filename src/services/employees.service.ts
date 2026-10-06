@@ -171,6 +171,22 @@ export const employeesService = {
     return data
   },
 
+  async updatePayrollRule(
+    ruleId: string,
+    data: { amount?: number; paymentDay?: number; startDate?: string }
+  ): Promise<void> {
+    const patch: Record<string, unknown> = {}
+    if (data.amount     !== undefined) patch.amount      = String(data.amount)
+    if (data.paymentDay !== undefined) patch.payment_day = data.paymentDay
+    if (data.startDate  !== undefined) patch.start_date  = data.startDate
+
+    const { error } = await supabase
+      .from('payroll_rules')
+      .update(patch)
+      .eq('id', ruleId)
+    if (error) throw new Error(error.message)
+  },
+
   async listObligations(employeeId: string, _workspaceId: string): Promise<ApiPayrollObligation[]> {
     const { data, error } = await supabase
       .from('payroll_obligations')

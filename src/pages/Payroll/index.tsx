@@ -2,16 +2,17 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, BriefcaseBusiness, DollarSign, Clock, CheckCircle2,
-  AlertCircle, Circle, Plus, Eye, Zap
+  AlertCircle, Circle, Plus, Eye, Pencil, Zap
 } from 'lucide-react'
-import { PageHeader, Card, Badge } from '@/components/ui'
+import { PageHeader, Card, Badge, ActionsMenu, QuickPayButton } from '@/components/ui'
 import { PayrollPaymentModal } from '@/components/modals/PayrollPaymentModal'
 import { NewEmployeeModal }    from '@/components/modals/NewEmployeeModal'
+import { EditEmployeeModal }   from '@/components/modals/EditEmployeeModal'
 import { useWorkspace }        from '@/context/WorkspaceContext'
 import { useEmployees }        from '@/hooks/useEmployees'
 import { usePayrollObligations, usePayrollSummary, useGeneratePayroll } from '@/hooks/usePayroll'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
-import type { ApiPayrollObligation, PayrollObligationStatus } from '@/types/api'
+import type { ApiEmployee, ApiPayrollObligation, PayrollObligationStatus } from '@/types/api'
 
 type Tab = 'equipo' | 'nomina'
 
@@ -40,6 +41,7 @@ export function PayrollPage() {
   const [tab, setTab]                   = useState<Tab>('equipo')
   const [payModal, setPayModal]         = useState(false)
   const [newEmpModal, setNewEmpModal]   = useState(false)
+  const [editingEmployee, setEditingEmployee] = useState<ApiEmployee | null>(null)
   const [selectedObligation, setSelectedObligation] = useState<ApiPayrollObligation | null>(null)
 
   const { data: employees = [], isLoading: loadEmp, isError: errEmp, refetch: refetchEmp } = useEmployees(wsId)
@@ -177,12 +179,10 @@ export function PayrollPage() {
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              onClick={() => navigate(`/equipo/${emp.id}`)}
-                              className="flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 transition-colors"
-                            >
-                              <Eye className="w-3 h-3" /> Ver
-                            </button>
+                            <ActionsMenu items={[
+                              { label: 'Ver detalle', icon: Eye,    onClick: () => navigate(`/equipo/${emp.id}`) },
+                              { label: 'Editar',      icon: Pencil, onClick: () => setEditingEmployee(emp) },
+                            ]} />
                           </td>
                         </tr>
                       )
@@ -206,12 +206,10 @@ export function PayrollPage() {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => navigate(`/equipo/${emp.id}`)}
-                        className="p-2 rounded-lg text-brand-400 hover:bg-base-hover transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <ActionsMenu items={[
+                        { label: 'Ver detalle', icon: Eye,    onClick: () => navigate(`/equipo/${emp.id}`) },
+                        { label: 'Editar',      icon: Pencil, onClick: () => setEditingEmployee(emp) },
+                      ]} />
                     </div>
                   )
                 })}
@@ -277,14 +275,33 @@ export function PayrollPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            {obl.status !== 'PAID' && obl.status !== 'CANCELLED' && (
-                              <button
-                                onClick={() => openPay(obl)}
-                                className="flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 transition-colors"
-                              >
-                                <DollarSign className="w-3 h-3" /> Pagar
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {obl.status !== 'PAID' && obl.status !== 'CANCELLED' && (
+                                <QuickPayButton
+                                  item={{
+                                    id:            obl.id,
+                                    sourceType:    'PAYROLL',
+                                    title:         obl.employee.name,
+                                    description:   obl.description,
+                                    amount:        Number(obl.amount),
+                                    amountPaid:    Number(obl.amountPaid),
+                                    pendingAmount: Number(obl.amount) - Number(obl.amountPaid),
+                                    dueDate:       obl.dueDate,
+                                    status:        obl.status,
+                                    workspaceId:   wsId,
+                                    entityId:      obl.id,
+                                    direction:     'OUTGOING',
+                                  }}
+                                  workspaceId={wsId}
+                                  size="sm"
+                                />
+                              )}
+                              <ActionsMenu items={[
+                                ...(obl.status !== 'PAID' && obl.status !== 'CANCELLED'
+                                  ? [{ label: 'Registrar pago', icon: DollarSign, onClick: () => openPay(obl) }]
+                                  : []),
+                              ]} />
+                            </div>
                           </td>
                         </tr>
                       )
@@ -313,14 +330,33 @@ export function PayrollPage() {
                           <p className="text-xs text-content-muted">Pendiente: <span className="text-amber-400 font-semibold">{formatCurrency(pendingAmt)}</span></p>
                           <p className="text-xs text-content-muted">Vence: {formatDate(obl.dueDate)}</p>
                         </div>
-                        {obl.status !== 'PAID' && obl.status !== 'CANCELLED' && (
-                          <button
-                            onClick={() => openPay(obl)}
-                            className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all"
-                          >
-                            Pagar
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {obl.status !== 'PAID' && obl.status !== 'CANCELLED' && (
+                            <QuickPayButton
+                              item={{
+                                id:            obl.id,
+                                sourceType:    'PAYROLL',
+                                title:         obl.employee.name,
+                                description:   obl.description,
+                                amount:        Number(obl.amount),
+                                amountPaid:    Number(obl.amountPaid),
+                                pendingAmount: Number(obl.amount) - Number(obl.amountPaid),
+                                dueDate:       obl.dueDate,
+                                status:        obl.status,
+                                workspaceId:   wsId,
+                                entityId:      obl.id,
+                                direction:     'OUTGOING',
+                              }}
+                              workspaceId={wsId}
+                              size="sm"
+                            />
+                          )}
+                          <ActionsMenu items={[
+                            ...(obl.status !== 'PAID' && obl.status !== 'CANCELLED'
+                              ? [{ label: 'Registrar pago', icon: DollarSign, onClick: () => openPay(obl) }]
+                              : []),
+                          ]} />
+                        </div>
                       </div>
                     </div>
                   )
@@ -339,6 +375,12 @@ export function PayrollPage() {
       <NewEmployeeModal
         open={newEmpModal}
         onClose={() => setNewEmpModal(false)}
+        workspaceId={wsId}
+      />
+      <EditEmployeeModal
+        open={!!editingEmployee}
+        onClose={() => setEditingEmployee(null)}
+        employee={editingEmployee}
         workspaceId={wsId}
       />
     </div>

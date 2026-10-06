@@ -24,6 +24,19 @@ export function useCreateAccount() {
   })
 }
 
+export function useUpdateAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workspaceId: _wsId, data }: { id: string; workspaceId: string; data: Partial<CreateAccountInput> }) =>
+      accountsService.update(id, data),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['accounts', vars.workspaceId] })
+      toast.success('Cuenta actualizada')
+    },
+    onError: (err: Error) => toast.error(mapSupabaseError(err)),
+  })
+}
+
 export function useDeactivateAccount() {
   const qc = useQueryClient()
   return useMutation({
