@@ -89,6 +89,15 @@ export const receivablesService = {
     return { payment: { id: r.payment_id }, receivable: { id: receivableId, status: r.receivable_status }, transaction: { id: r.transaction_id } }
   },
 
+  async cancelPayment(paymentId: string, workspaceId: string): Promise<{ cancelled: boolean }> {
+    const { data, error } = await supabase.rpc('cancel_client_payment', {
+      p_workspace_id: workspaceId,
+      p_payment_id:   paymentId,
+    })
+    if (error) throw new Error(error.message)
+    return data as { cancelled: boolean }
+  },
+
   async generateMonthly(
     workspaceId: string,
     month: number,

@@ -4,7 +4,7 @@ import {
   Landmark, Plus, Eye, TrendingDown, Clock, CheckCircle2,
   AlertCircle, Pencil, Archive, Trash2, CreditCard,
 } from 'lucide-react'
-import { PageHeader, Card, ConfirmDialog, ActionsMenu } from '@/components/ui'
+import { PageHeader, Card, ConfirmDialog, ActionsMenu, QuickPayButton } from '@/components/ui'
 import { NewDebtModal }            from '@/components/modals/NewDebtModal'
 import { EditDebtModal }           from '@/components/modals/EditDebtModal'
 import { InstallmentPaymentModal } from '@/components/modals/InstallmentPaymentModal'
@@ -228,13 +228,25 @@ export function DebtsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {next && (
-                              <button
-                                onClick={() => openPay(debt, next)}
-                                className="px-2.5 py-1 rounded-lg bg-brand-600/15 hover:bg-brand-600/25 text-brand-400 text-xs font-semibold transition-all"
-                              >
-                                Pagar
-                              </button>
+                            {next && debt.status === 'ACTIVE' && (
+                              <QuickPayButton
+                                item={{
+                                  id:            next.id,
+                                  sourceType:    'DEBT',
+                                  title:         debt.name,
+                                  description:   `Cuota ${next.number}`,
+                                  amount:        Number(next.amount),
+                                  amountPaid:    Number(next.amountPaid),
+                                  pendingAmount: Number(next.amount) - Number(next.amountPaid),
+                                  dueDate:       next.dueDate,
+                                  status:        next.status,
+                                  workspaceId:   wsId,
+                                  entityId:      next.id,
+                                  direction:     'OUTGOING',
+                                }}
+                                workspaceId={wsId}
+                                size="sm"
+                              />
                             )}
                             <DebtActionsMenu debt={debt} />
                           </div>
@@ -274,13 +286,30 @@ export function DebtsPage() {
                       </div>
                       <p className="text-xs text-amber-400 font-semibold">Pendiente: {formatCurrency(debt.summary?.outstanding ?? 0)}</p>
                     </div>
-                    {next && (
-                      <button
-                        onClick={() => openPay(debt, next)}
-                        className="w-full py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all"
-                      >
-                        Pagar cuota {next.number} — {formatCurrency(Number(next.amount) - Number(next.amountPaid))}
-                      </button>
+                    {next && debt.status === 'ACTIVE' && (
+                      <div className="flex items-center gap-3">
+                        <QuickPayButton
+                          item={{
+                            id:            next.id,
+                            sourceType:    'DEBT',
+                            title:         debt.name,
+                            description:   `Cuota ${next.number}`,
+                            amount:        Number(next.amount),
+                            amountPaid:    Number(next.amountPaid),
+                            pendingAmount: Number(next.amount) - Number(next.amountPaid),
+                            dueDate:       next.dueDate,
+                            status:        next.status,
+                            workspaceId:   wsId,
+                            entityId:      next.id,
+                            direction:     'OUTGOING',
+                          }}
+                          workspaceId={wsId}
+                          size="md"
+                        />
+                        <span className="text-xs text-content-muted">
+                          Pagar cuota {next.number} — {formatCurrency(Number(next.amount) - Number(next.amountPaid))}
+                        </span>
+                      </div>
                     )}
                   </div>
                 )

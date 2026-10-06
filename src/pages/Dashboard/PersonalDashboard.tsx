@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   TrendingUp, TrendingDown, Wallet, CircleDollarSign,
   Eye, EyeOff, Zap, AlertCircle, AlertTriangle,
@@ -13,8 +12,6 @@ import { useAccounts }        from '@/hooks/useAccounts'
 import { formatCurrency, getGreeting } from '@/lib/utils'
 import { maskAmount }         from '@/lib/privacy'
 import { cn }                 from '@/lib/utils'
-import { PendingActionModal } from '@/components/modals/PendingActionModal'
-import type { PendingItem }   from '@/types/api'
 import {
   FinancialStatusBar,
   ResolveSection,
@@ -49,8 +46,6 @@ export function PersonalDashboard() {
 
   const { data: cashFlow } = useCashFlow(wsId, year)
   const { data: expDist  } = useExpenseDistribution(wsId, dateRange.from, dateRange.to)
-
-  const [actionItem, setActionItem] = useState<PendingItem | null>(null)
 
   const { data: pendingItems = [] } = usePendingItems(wsId, { limit: 50 })
   const { items: purchases }        = usePurchases()
@@ -218,7 +213,6 @@ export function PersonalDashboard() {
           reminders={reminders}
           privacyMode={privacyMode}
           onComplete={completeReminder}
-          onPayPending={item => setActionItem(item)}
         />
       </section>
 
@@ -277,11 +271,6 @@ export function PersonalDashboard() {
       {/* ── Acciones rápidas ────────────────────────────────────── */}
       <QuickActions />
 
-      <PendingActionModal
-        open={!!actionItem}
-        onClose={() => setActionItem(null)}
-        item={actionItem}
-      />
     </div>
   )
 }

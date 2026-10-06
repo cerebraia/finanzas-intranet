@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { Clock, Filter, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { PageHeader, EmptyState } from '@/components/ui'
-import { PaymentModal } from '@/components/modals/PaymentModal'
+import { PageHeader, EmptyState, QuickPayButton } from '@/components/ui'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { useReceivables, useGenerateReceivables } from '@/hooks/useReceivables'
 import { useBusinessDashboard } from '@/hooks/useBusinessAnalytics'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
-import type { ApiReceivable, ReceivableStatus } from '@/types/api'
+import type { ReceivableStatus } from '@/types/api'
 
 function dateStr(d: Date) { return d.toISOString().slice(0, 10) }
 
@@ -27,7 +26,6 @@ export function ReceivablesPage() {
   const navigate = useNavigate()
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
-  const [payRec, setPayRec]             = useState<ApiReceivable | null>(null)
 
   const { data: receivables = [], isLoading, isError, refetch } = useReceivables(wsId, {
     from:   dateStr(dateRange.from),
@@ -145,10 +143,24 @@ export function ReceivablesPage() {
                       </td>
                       <td className="px-4 py-3">
                         {rec.status !== 'PAID' && rec.status !== 'CANCELLED' && (
-                          <button onClick={() => setPayRec(rec)}
-                            className="text-xs px-2 py-1 rounded-lg bg-brand-600/15 text-brand-400 border border-brand-600/25 hover:bg-brand-600/25 transition-colors whitespace-nowrap">
-                            Registrar pago
-                          </button>
+                          <QuickPayButton
+                            item={{
+                              id:            rec.id,
+                              sourceType:    'RECEIVABLE',
+                              title:         rec.client.name,
+                              description:   rec.description,
+                              amount:        Number(rec.amount),
+                              amountPaid:    Number(rec.amountPaid),
+                              pendingAmount: Number(rec.amount) - Number(rec.amountPaid),
+                              dueDate:       String(rec.dueDate).slice(0, 10),
+                              status:        rec.status,
+                              workspaceId:   wsId,
+                              entityId:      rec.id,
+                              direction:     'INCOMING',
+                            }}
+                            workspaceId={wsId}
+                            size="sm"
+                          />
                         )}
                       </td>
                     </tr>
@@ -160,7 +172,6 @@ export function ReceivablesPage() {
         </div>
       )}
 
-      <PaymentModal open={!!payRec} onClose={() => setPayRec(null)} receivable={payRec} />
     </div>
   )
 }

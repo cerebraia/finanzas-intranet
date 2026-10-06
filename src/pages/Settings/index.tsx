@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react'
-import { Check, Download, Upload, FileText, Database, Zap, Monitor, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Check, Download, Upload, FileText, Database, Zap, Monitor, AlertTriangle, RefreshCw, Wallet } from 'lucide-react'
 import { PageHeader, Card, ConfirmDialog } from '@/components/ui'
 import { useApp } from '@/context/AppContext'
+import { useWorkspace } from '@/context/WorkspaceContext'
+import { useAccounts } from '@/hooks/useAccounts'
+import { useDefaultAccount } from '@/hooks/useDefaultAccount'
 import { STORAGE_KEYS } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 
@@ -57,11 +60,22 @@ interface BackupPreview {
 
 export function SettingsPage() {
   const { focusMode, toggleFocus } = useApp()
+  const { activeWorkspace }        = useWorkspace()
+  const wsId = activeWorkspace.id
+
   const [prefs, setPrefs]           = useState<UserPrefs>(loadPrefs)
   const [saved, setSaved]           = useState(false)
   const [preview, setPreview]       = useState<BackupPreview | null>(null)
   const [confirmRestore, setConfirmRestore] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const { data: accounts = [] } = useAccounts(wsId)
+  const {
+    defaultPayAccountId,
+    defaultCollectAccountId,
+    setDefaultPayAccount,
+    setDefaultCollectAccount,
+  } = useDefaultAccount(wsId)
 
   function handleSave() {
     localStorage.setItem(STORAGE_KEYS.userPrefs, JSON.stringify(prefs))
@@ -189,6 +203,45 @@ export function SettingsPage() {
                 prefs.notifEnabled ? 'translate-x-5' : 'translate-x-0'
               )} />
             </button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Preferencias Financieras */}
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-brand-400" />
+          <h3 className="text-sm font-semibold text-content-primary">Preferencias Financieras</h3>
+        </div>
+        <p className="text-xs text-content-muted">
+          Cuentas predeterminadas para pagos rápidos con un solo clic. Se guardan localmente en este dispositivo.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Cuenta predeterminada para pagos</label>
+            <select
+              value={defaultPayAccountId}
+              onChange={e => setDefaultPayAccount(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Sin predeterminada</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Cuenta predeterminada para cobros</label>
+            <select
+              value={defaultCollectAccountId}
+              onChange={e => setDefaultCollectAccount(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Sin predeterminada</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </Card>

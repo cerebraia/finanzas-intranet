@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileText, Plus, DollarSign, Zap, AlertCircle, Pencil, PowerOff, Power, Trash2 } from 'lucide-react'
-import { PageHeader, Card, Badge, ConfirmDialog, ActionsMenu } from '@/components/ui'
+import { PageHeader, Card, Badge, ConfirmDialog, ActionsMenu, QuickPayButton } from '@/components/ui'
 import { FixedExpenseModal } from '@/components/modals/FixedExpenseModal'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/hooks/useRecurringExpenses'
 import { recurringExpensesService } from '@/services/recurringExpenses.service'
 import { useAccounts } from '@/hooks/useAccounts'
+import { usePendingItems } from '@/hooks/usePendingItems'
 import { formatCurrency, cn } from '@/lib/utils'
 import type { ApiRecurringExpense } from '@/types/api'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -127,6 +128,7 @@ export function FixedExpensesPage() {
   const [blockedMsg,    setBlockedMsg]    = useState<string | null>(null)
 
   const { data: expenses = [], isLoading, isError, refetch } = useRecurringExpenses(wsId)
+  const { data: pendingItems = [] } = usePendingItems(wsId, { types: ['RECURRING_EXPENSE'] })
   const generateRecurring = useGenerateRecurring()
   const toggleExpense     = useToggleRecurringExpense()
   const deleteExpense     = useDeleteRecurringExpense()
@@ -236,43 +238,58 @@ export function FixedExpensesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-base-border">
-                  {expenses.map(exp => (
-                    <tr key={exp.id} className={cn('hover:bg-base-hover transition-colors', !exp.isActive && 'opacity-50')}>
-                      <td className="px-4 py-3 font-medium text-content-primary">{exp.name}</td>
-                      <td className="px-4 py-3 font-semibold tabular-nums">{formatCurrency(Number(exp.amount))}</td>
-                      <td className="px-4 py-3 text-content-muted text-xs">{exp.category.name}</td>
-                      <td className="px-4 py-3 text-content-muted">Día {exp.paymentDay}</td>
-                      <td className="px-4 py-3 text-content-muted text-xs">{exp.account?.name ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={exp.isActive ? 'success' : 'default'}>{exp.isActive ? 'Activo' : 'Inactivo'}</Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <ActionsMenu items={getActions(exp)} />
-                      </td>
-                    </tr>
-                  ))}
+                  {expenses.map(exp => {
+                    const pendingForExpense = pendingItems.find(p => p.title === exp.name)
+                    return (
+                      <tr key={exp.id} className={cn('hover:bg-base-hover transition-colors', !exp.isActive && 'opacity-50')}>
+                        <td className="px-4 py-3 font-medium text-content-primary">{exp.name}</td>
+                        <td className="px-4 py-3 font-semibold tabular-nums">{formatCurrency(Number(exp.amount))}</td>
+                        <td className="px-4 py-3 text-content-muted text-xs">{exp.category.name}</td>
+                        <td className="px-4 py-3 text-content-muted">Día {exp.paymentDay}</td>
+                        <td className="px-4 py-3 text-content-muted text-xs">{exp.account?.name ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant={exp.isActive ? 'success' : 'default'}>{exp.isActive ? 'Activo' : 'Inactivo'}</Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {pendingForExpense && (
+                              <QuickPayButton item={pendingForExpense} workspaceId={wsId} size="sm" />
+                            )}
+                            <ActionsMenu items={getActions(exp)} />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile */}
             <div className="md:hidden divide-y divide-base-border">
-              {expenses.map(exp => (
-                <div key={exp.id} className={cn('p-4 flex items-center justify-between gap-3', !exp.isActive && 'opacity-50')}>
-                  <div>
-                    <p className="font-medium text-content-primary text-sm">{exp.name}</p>
-                    <p className="text-xs text-content-muted">{exp.category.name} — Día {exp.paymentDay}</p>
-                    <p className="text-xs font-semibold text-content-primary mt-0.5">{formatCurrency(Number(exp.amount))}</p>
+              {expenses.map(exp => {
+                const pendingForExpense = pendingItems.find(p => p.title === exp.name)
+                return (
+                  <div key={exp.id} className={cn('p-4 flex items-center justify-between gap-3', !exp.isActive && 'opacity-50')}>
+                    <div>
+                      <p className="font-medium text-content-primary text-sm">{exp.name}</p>
+                      <p className="text-xs text-content-muted">{exp.category.name} — Día {exp.paymentDay}</p>
+                      <p className="text-xs font-semibold text-content-primary mt-0.5">{formatCurrency(Number(exp.amount))}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {pendingForExpense ? (
+                        <QuickPayButton item={pendingForExpense} workspaceId={wsId} size="md" />
+                      ) : (
+                        <button onClick={() => openPay(exp)}
+                          className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all">
+                          Pagar
+                        </button>
+                      )}
+                      <ActionsMenu items={getActions(exp)} />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => openPay(exp)}
-                      className="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all">
-                      Pagar
-                    </button>
-                    <ActionsMenu items={getActions(exp)} />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}

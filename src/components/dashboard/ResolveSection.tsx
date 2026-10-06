@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/utils'
 import { maskAmount } from '@/lib/privacy'
 import type { PendingItem } from '@/types/api'
 import type { PurchaseItem, Reminder } from '@/types/purchases'
+import { QuickPayButton } from '@/components/ui/QuickPayButton'
 
 // ─── Unified resolve item ─────────────────────────────────────────────────────
 
@@ -144,8 +145,12 @@ interface Props {
   onPayPending?: (item: PendingItem) => void
 }
 
-export function ResolveSection({ pendingItems, purchases, reminders, privacyMode, onComplete, onPayPending }: Props) {
+const pendingItemsMap = (items: PendingItem[]): Map<string, PendingItem> =>
+  new Map(items.map(i => [i.id, i]))
+
+export function ResolveSection({ pendingItems, purchases, reminders, privacyMode, onComplete, onPayPending: _onPayPending }: Props) {
   const navigate = useNavigate()
+  const piMap    = pendingItemsMap(pendingItems)
 
   const all = [
     ...normalizePendingItems(pendingItems),
@@ -194,9 +199,7 @@ export function ResolveSection({ pendingItems, purchases, reminders, privacyMode
                 privacyMode={privacyMode}
                 onNavigate={() => navigate(item.path)}
                 onComplete={item.source === 'REMINDER' && onComplete ? () => onComplete(item.id) : undefined}
-                onPay={item.source === 'PENDING' && onPayPending
-                  ? () => onPayPending(pendingItems.find(p => p.id === item.id)!)
-                  : undefined}
+                pendingItem={item.source === 'PENDING' ? piMap.get(item.id) : undefined}
               />
             ))}
 
@@ -216,13 +219,13 @@ export function ResolveSection({ pendingItems, purchases, reminders, privacyMode
 }
 
 function ResolveItemRow({
-  item, privacyMode, onNavigate, onComplete, onPay,
+  item, privacyMode, onNavigate, onComplete, pendingItem,
 }: {
-  item:        ResolveItem
-  privacyMode: boolean
-  onNavigate:  () => void
-  onComplete?: () => void
-  onPay?:      () => void
+  item:         ResolveItem
+  privacyMode:  boolean
+  onNavigate:   () => void
+  onComplete?:  () => void
+  pendingItem?: PendingItem
 }) {
   const formatDate = (d: string) => {
     const [, m, day] = d.split('-')
@@ -263,15 +266,10 @@ function ResolveItemRow({
 
       {/* Actions */}
       <div className="flex items-center gap-1 flex-shrink-0">
-        {onPay && (
-          <button
-            onClick={e => { e.stopPropagation(); onPay() }}
-            className="opacity-0 group-hover:opacity-100 text-[10px] px-2 py-1 rounded-lg font-medium transition-all"
-            style={{ background: item.direction === 'INCOMING' ? 'rgba(16,185,129,.15)' : 'rgba(99,102,241,.15)',
-                     color: item.direction === 'INCOMING' ? '#34d399' : '#818cf8' }}
-          >
-            {item.direction === 'INCOMING' ? 'Cobrar' : 'Pagar'}
-          </button>
+        {pendingItem && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            <QuickPayButton item={pendingItem} workspaceId={pendingItem.workspaceId} size="sm" />
+          </div>
         )}
         {onComplete && (
           <button
