@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { SupabaseRPCError } from '@/lib/rpcError'
 import type {
   ApiDebt, ApiDebtInstallment, ApiDebtPayment,
   CreateDebtInput, RegisterDebtPaymentInput, FinancialCommitmentSummary,
@@ -182,7 +183,7 @@ export const debtsService = {
       p_notes:           data.notes          ?? null,
       p_idempotency_key: data.idempotencyKey ?? null,
     })
-    if (error) throw new Error(error.message)
+    if (error) throw new SupabaseRPCError(error)
     const r = result as Record<string, unknown>
     return {
       payment:     { id: r.payment_id } as ApiDebtPayment,

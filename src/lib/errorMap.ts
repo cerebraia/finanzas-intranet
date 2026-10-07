@@ -1,3 +1,5 @@
+import { SupabaseRPCError } from '@/lib/rpcError'
+
 const PG_CODE_MESSAGES: Record<string, string> = {
   '23505': 'Este registro ya existe.',
   '23503': 'El registro relacionado no existe o no puede eliminarse porque tiene datos asociados.',
@@ -7,8 +9,10 @@ const PG_CODE_MESSAGES: Record<string, string> = {
   '22003': 'El valor numérico está fuera del rango permitido.',
   '42501': 'Tu sesión puede haber expirado. Inicia sesión nuevamente.',
   '42P01': 'Tabla no encontrada. Verifica las migraciones.',
+  '42883': 'No se encontró la función en la base de datos.',
   'PGRST116': 'No se encontró el registro solicitado.',
   'PGRST204': 'No se encontró el registro para actualizar.',
+  'PGRST203': 'Ambigüedad en la llamada a función. Verifica las migraciones.',
 }
 
 const KEYWORD_MESSAGES: [string, string][] = [
@@ -46,12 +50,25 @@ export function mapSupabaseError(err: unknown): string {
 
   const message = err instanceof Error ? err.message : String(err)
 
-  // Log the raw error in dev for debugging
   if (import.meta.env.DEV) {
-    console.error('[Supabase error]', message)
+    if (err instanceof SupabaseRPCError) {
+      console.error('[Supabase error]', {
+        code:    err.code,
+        message: err.message,
+        details: err.details,
+        hint:    err.hint,
+      })
+    } else {
+      console.error('[Supabase error]', message)
+    }
   }
 
-  // Check PG error codes embedded in message
+  // Direct code check on SupabaseRPCError (avoids regex)
+  if (err instanceof SupabaseRPCError && err.code && PG_CODE_MESSAGES[err.code]) {
+    return PG_CODE_MESSAGES[err.code]
+  }
+
+  // Check PG error codes embedded in message string
   const codeMatch = message.match(/\b([0-9]{5}|PGRST\d+)\b/)
   if (codeMatch && PG_CODE_MESSAGES[codeMatch[1]]) {
     return PG_CODE_MESSAGES[codeMatch[1]]

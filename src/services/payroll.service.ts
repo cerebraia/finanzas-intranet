@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { SupabaseRPCError } from '@/lib/rpcError'
 import type { ApiPayrollObligation, PayrollSummary, RegisterPayrollPaymentInput, PayrollObligationStatus } from '@/types/api'
 
 function mapObligation(row: Record<string, unknown>): ApiPayrollObligation {
@@ -69,7 +70,7 @@ export const payrollService = {
       p_notes:           data.notes           ?? null,
       p_idempotency_key: data.idempotencyKey  ?? null,
     })
-    if (error) throw new Error(error.message)
+    if (error) throw new SupabaseRPCError(error)
     const r = result as Record<string, unknown>
     return {
       payment:    { id: r.payment_id },
@@ -88,7 +89,7 @@ export const payrollService = {
       .select('employee_id')
       .eq('id', obligationId)
       .single()
-    if (fetchErr) throw new Error(fetchErr.message)
+    if (fetchErr) throw new SupabaseRPCError(fetchErr)
     const { employee_id } = oblig as { employee_id: string }
     return payrollService.registerPayment(obligationId, {
       workspaceId,

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { SupabaseRPCError } from '@/lib/rpcError'
 import type { ApiReceivable, RegisterPaymentInput, ReceivableStatus } from '@/types/api'
 
 function mapReceivable(row: Record<string, unknown>): ApiReceivable {
@@ -84,7 +85,7 @@ export const receivablesService = {
       p_notes:           data.notes           ?? null,
       p_idempotency_key: data.idempotencyKey  ?? null,
     })
-    if (error) throw new Error(error.message)
+    if (error) throw new SupabaseRPCError(error)
     const r = result as Record<string, unknown>
     return { payment: { id: r.payment_id }, receivable: { id: receivableId, status: r.receivable_status }, transaction: { id: r.transaction_id } }
   },

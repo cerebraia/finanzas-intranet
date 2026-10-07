@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { SupabaseRPCError } from '@/lib/rpcError'
 import type { ApiRecurringExpense, CreateRecurringExpenseInput, RecurringFrequency } from '@/types/api'
 
 function mapExpense(row: Record<string, unknown>): ApiRecurringExpense {
@@ -94,7 +95,7 @@ export const recurringExpensesService = {
       p_payment_date:         data.paymentDate,
       p_reference:            data.reference ?? null,
     })
-    if (error) throw new Error(error.message)
+    if (error) throw new SupabaseRPCError(error)
     return result
   },
 
@@ -116,7 +117,7 @@ export const recurringExpensesService = {
       .select('recurring_expense_id, period_month, period_year')
       .eq('id', obligationId)
       .single()
-    if (fetchErr) throw new Error(fetchErr.message)
+    if (fetchErr) throw new SupabaseRPCError(fetchErr)
     const o = oblig as { recurring_expense_id: string; period_month: number; period_year: number }
     return recurringExpensesService.pay(o.recurring_expense_id, workspaceId, {
       month:       o.period_month,
