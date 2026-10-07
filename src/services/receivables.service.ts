@@ -76,7 +76,7 @@ export const receivablesService = {
       p_workspace_id:    data.workspaceId,
       p_client_id:       data.clientId,
       p_receivable_id:   receivableId,
-      p_account_id:      data.accountId,
+      p_account_id:      data.accountId      ?? null,
       p_amount:          data.amount,
       p_currency:        'USD',
       p_payment_date:    data.paymentDate,

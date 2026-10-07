@@ -11,7 +11,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         {/* Logo */}
         <img
           src="/logo-myd3000.svg"
-          alt="MYD3000"
+          alt="Fernando ADS"
           className="h-9 w-auto object-contain object-left"
           draggable={false}
         />
@@ -19,7 +19,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         {/* Tagline */}
         <div>
           <p className="text-2xl font-semibold text-white leading-snug mb-3">
-            Gestión financiera<br />interna MYD3000.
+            Gestión financiera<br />interna · Fernando ADS.
           </p>
           <p className="text-sm text-white/45">
             Acceso restringido — solo personal autorizado.
@@ -28,7 +28,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
         {/* Footer */}
         <p className="text-[11px] text-white/25">
-          © {new Date().getFullYear()} MYD3000. Sistema interno.
+          © {new Date().getFullYear()} Fernando ADS. Sistema interno.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div className="lg:hidden mb-8">
           <img
             src="/logo-myd3000-dark.svg"
-            alt="MYD3000"
+            alt="Fernando ADS"
             className="h-8 w-auto object-contain"
             draggable={false}
           />
@@ -50,7 +50,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         </div>
 
         <p className="mt-6 text-[11px] text-content-disabled">
-          © {new Date().getFullYear()} MYD3000 — Uso interno
+          © {new Date().getFullYear()} Fernando ADS — Uso interno
         </p>
       </div>
     </div>

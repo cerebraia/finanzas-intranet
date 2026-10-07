@@ -174,7 +174,7 @@ export const debtsService = {
       p_workspace_id:    data.workspaceId,
       p_debt_id:         data.debtId,
       p_installment_id:  installmentId,
-      p_account_id:      data.accountId,
+      p_account_id:      data.accountId      ?? null,
       p_amount:          data.amount,
       p_currency:        'USD',
       p_payment_date:    data.paymentDate,

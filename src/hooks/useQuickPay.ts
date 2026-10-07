@@ -11,9 +11,9 @@ import type { PendingItem } from '@/types/api'
 export function useQuickPay() {
   const qc = useQueryClient()
 
-  async function quickPay(item: PendingItem, accountId: string): Promise<void> {
+  async function quickPay(item: PendingItem): Promise<void> {
     const { entityId, workspaceId, sourceType, pendingAmount } = item
-    const paymentDate   = new Date().toISOString().slice(0, 10)
+    const paymentDate    = new Date().toISOString().slice(0, 10)
     const idempotencyKey = crypto.randomUUID()
     const label  = sourceType === 'RECEIVABLE' ? 'Cobro' : 'Pago'
     const amount = formatCurrency(pendingAmount)
@@ -31,8 +31,7 @@ export function useQuickPay() {
         workspaceId,
         debtId,
         installmentId: entityId,
-        accountId,
-        amount: pendingAmount,
+        amount:         pendingAmount,
         paymentDate,
         idempotencyKey,
       })
@@ -42,7 +41,6 @@ export function useQuickPay() {
       qc.invalidateQueries({ queryKey: ['pending-items'] })
       qc.invalidateQueries({ queryKey: ['commitment-summary'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
 
       toast.success(`${label} de ${amount} registrado`, {
@@ -56,7 +54,6 @@ export function useQuickPay() {
               qc.invalidateQueries({ queryKey: ['pending-items'] })
               qc.invalidateQueries({ queryKey: ['commitment-summary'] })
               qc.invalidateQueries({ queryKey: ['transactions'] })
-              qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
               qc.invalidateQueries({ queryKey: ['dashboard'] })
               toast.success('Pago revertido')
             } catch (err) {
@@ -80,8 +77,7 @@ export function useQuickPay() {
       const result = await receivablesService.registerPayment(entityId, {
         workspaceId,
         clientId,
-        accountId,
-        amount: pendingAmount,
+        amount:         pendingAmount,
         paymentDate,
         idempotencyKey,
       })
@@ -93,7 +89,6 @@ export function useQuickPay() {
       qc.invalidateQueries({ queryKey: ['client-profitability'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
       qc.invalidateQueries({ queryKey: ['business'] })
       qc.invalidateQueries({ queryKey: ['pending-items'] })
 
@@ -110,7 +105,6 @@ export function useQuickPay() {
               qc.invalidateQueries({ queryKey: ['client-profitability'] })
               qc.invalidateQueries({ queryKey: ['transactions'] })
               qc.invalidateQueries({ queryKey: ['dashboard'] })
-              qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
               qc.invalidateQueries({ queryKey: ['business'] })
               qc.invalidateQueries({ queryKey: ['pending-items'] })
               toast.success('Pago revertido')
@@ -125,8 +119,7 @@ export function useQuickPay() {
 
     if (sourceType === 'PAYROLL') {
       const result = await payrollService.payObligationById(entityId, workspaceId, {
-        accountId,
-        amount: pendingAmount,
+        amount:         pendingAmount,
         paymentDate,
         idempotencyKey,
       })
@@ -136,7 +129,6 @@ export function useQuickPay() {
       qc.invalidateQueries({ queryKey: ['payroll-summary'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
       qc.invalidateQueries({ queryKey: ['pending-items'] })
       qc.invalidateQueries({ queryKey: ['commitment-summary'] })
 
@@ -151,7 +143,6 @@ export function useQuickPay() {
               qc.invalidateQueries({ queryKey: ['payroll-summary'] })
               qc.invalidateQueries({ queryKey: ['transactions'] })
               qc.invalidateQueries({ queryKey: ['dashboard'] })
-              qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
               qc.invalidateQueries({ queryKey: ['pending-items'] })
               qc.invalidateQueries({ queryKey: ['commitment-summary'] })
               toast.success('Pago revertido')
@@ -166,14 +157,12 @@ export function useQuickPay() {
 
     if (sourceType === 'RECURRING_EXPENSE') {
       await recurringExpensesService.payObligationById(entityId, workspaceId, {
-        accountId,
         paymentDate,
       })
 
       qc.invalidateQueries({ queryKey: ['pending-items'] })
       qc.invalidateQueries({ queryKey: ['recurring-expenses'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      qc.invalidateQueries({ queryKey: ['accounts', workspaceId] })
       qc.invalidateQueries({ queryKey: ['commitment-summary'] })
 
       toast.success(`${label} de ${amount} registrado`)

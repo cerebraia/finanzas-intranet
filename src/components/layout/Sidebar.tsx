@@ -62,7 +62,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile, toggle
           <div className="w-8 h-8 flex items-center justify-center">
             <img
               src="/logo-myd3000.svg"
-              alt="MYD3000"
+              alt="Fernando ADS"
               className="h-6 w-auto object-contain object-left"
               draggable={false}
             />
@@ -70,7 +70,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile, toggle
         ) : (
           <img
             src="/logo-myd3000.svg"
-            alt="MYD3000"
+            alt="Fernando ADS"
             className="h-7 w-auto object-contain object-left"
             draggable={false}
           />

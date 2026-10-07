@@ -225,7 +225,7 @@ export interface ClientProfitability {
 export interface RegisterPaymentInput {
   workspaceId:     string
   clientId:        string
-  accountId:       string
+  accountId?:      string | null
   amount:          number
   paymentDate:     string
   reference?:      string
@@ -379,7 +379,7 @@ export interface PendingItem {
 export interface RegisterPayrollPaymentInput {
   workspaceId:        string
   employeeId:         string
-  accountId:          string
+  accountId?:         string | null
   amount:             number
   paymentDate:        string
   reference?:         string
@@ -515,7 +515,7 @@ export interface RegisterDebtPaymentInput {
   workspaceId:     string
   debtId:          string
   installmentId:   string
-  accountId:       string
+  accountId?:      string | null
   amount:          number
   paymentDate:     string
   reference?:      string

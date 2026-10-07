@@ -83,14 +83,14 @@ export const recurringExpensesService = {
   async pay(
     id: string,
     workspaceId: string,
-    data: { month: number; year: number; accountId: string; paymentDate: string; reference?: string }
+    data: { month: number; year: number; accountId?: string | null; paymentDate: string; reference?: string }
   ): Promise<unknown> {
     const { data: result, error } = await supabase.rpc('pay_recurring_expense', {
       p_workspace_id:         workspaceId,
       p_recurring_expense_id: id,
       p_month:                data.month,
       p_year:                 data.year,
-      p_account_id:           data.accountId,
+      p_account_id:           data.accountId ?? null,
       p_payment_date:         data.paymentDate,
       p_reference:            data.reference ?? null,
     })
@@ -109,7 +109,7 @@ export const recurringExpensesService = {
   async payObligationById(
     obligationId: string,
     workspaceId: string,
-    data: { accountId: string; paymentDate: string; reference?: string }
+    data: { accountId?: string | null; paymentDate: string; reference?: string }
   ): Promise<unknown> {
     const { data: oblig, error: fetchErr } = await supabase
       .from('recurring_expense_obligations')

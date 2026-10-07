@@ -61,7 +61,7 @@ export const payrollService = {
       p_workspace_id:    data.workspaceId,
       p_employee_id:     data.employeeId,
       p_obligation_id:   obligationId,
-      p_account_id:      data.accountId,
+      p_account_id:      data.accountId      ?? null,
       p_amount:          data.amount,
       p_currency:        'USD',
       p_payment_date:    data.paymentDate,
@@ -81,7 +81,7 @@ export const payrollService = {
   async payObligationById(
     obligationId: string,
     workspaceId: string,
-    data: { accountId: string; amount: number; paymentDate: string; reference?: string; notes?: string; idempotencyKey?: string }
+    data: { accountId?: string | null; amount: number; paymentDate: string; reference?: string; notes?: string; idempotencyKey?: string }
   ): Promise<unknown> {
     const { data: oblig, error: fetchErr } = await supabase
       .from('payroll_obligations')
